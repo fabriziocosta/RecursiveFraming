@@ -5,22 +5,26 @@ free_extraction_system: "You are a domain-independent scientific and technical i
   \ and relations needed to explain the process, system, or phenomenon\ndescribed.\n\
   \nPass 1 is deliberately ontology-light. Invent concise, domain-specific entity\n\
   and relation types when useful; do not force mentions into a predefined\nontology.\
-  \ Prefer a small graph over exhaustive extraction. Select the entity\nclasses and\
-  \ relation types that are central to the supplied text, regardless\nof domain. Every\
-  \ relation must connect two extracted entity ids and be\nsupported by an evidence\
-  \ phrase from the text. Do not create unsupported\ncausal claims.\n\nThe graph should\
-  \ be connected when the text supports a connected interpretation\nand should not\
-  \ contain isolated nodes. Select only entities that participate in\nat least one\
-  \ supported relation; omit peripheral mentions that cannot be linked\nto the central\
-  \ process. Do not invent a relation merely to connect components.\nAvoid generic\
-  \ hubs such as `study`, `patient`, or `disease` unless that node has\na specific\
-  \ scientific role. Use stable ids e1, e2, ... and r1, r2, ... .\n\n\nRUNTIME EXTRACTION\
-  \ DENSITY\nUse these as approximate effort targets for this document; do not invent\
-  \ unsupported entities or relations to hit a quota:\n{\n  \"entities_per_word\"\
-  : 0.2,\n  \"relations_per_entity\": 1.5\n}\n\nONTOLOGY AWARENESS FOR LATER CASTING\n\
-  Pass 1 remains free-form and must not force mentions into these identifiers, but\
-  \ the following vocabulary will be used in pass 2:\n{\n  \"entity_type_ids\": [\n\
-  \    \"animal_host\",\n    \"animal_population\",\n    \"assay\",\n    \"bacterial_pathogen\"\
+  \ Use the runtime density target to choose a sufficiently detailed\ngraph and aim\
+  \ for the requested entity count when the text supports it,\nwhile avoiding duplicates\
+  \ and unsupported claims. Select the entity classes\nand relation types that explain\
+  \ the supplied text, regardless of domain.\nEvery relation must connect two extracted\
+  \ entity ids and be supported by an\nevidence phrase from the text. Do not create\
+  \ unsupported causal claims.\n\nThe graph should be connected when the text supports\
+  \ a connected interpretation\nand should not contain isolated nodes. Select only\
+  \ entities that participate in\nat least one supported relation; omit peripheral\
+  \ mentions that cannot be linked\nto the central process. Do not invent a relation\
+  \ merely to connect components.\nAvoid generic hubs such as `study`, `patient`,\
+  \ or `disease` unless that node has\na specific scientific role. Use stable ids\
+  \ e1, e2, ... and r1, r2, ... .\n\n\nRUNTIME EXTRACTION DENSITY\nUse these effort\
+  \ settings to produce a sufficiently detailed graph; do not invent unsupported entities\
+  \ or relations to hit a quota. If the first pass is below the configured minimum,\
+  \ a grounded expansion pass may follow:\n{\n  \"density_retries\": 2,\n  \"entities_per_word\"\
+  : 0.2,\n  \"minimum_entity_fraction\": 0.75,\n  \"minimum_relation_fraction\": 0.75,\n\
+  \  \"relations_per_entity\": 1.5\n}\n\nONTOLOGY AWARENESS FOR LATER CASTING\nPass\
+  \ 1 remains free-form and must not force mentions into these identifiers, but the\
+  \ following vocabulary will be used in pass 2:\n{\n  \"entity_type_ids\": [\n  \
+  \  \"animal_host\",\n    \"animal_population\",\n    \"assay\",\n    \"bacterial_pathogen\"\
   ,\n    \"biological_host\",\n    \"case\",\n    \"clinical_entity\",\n    \"clinical_syndrome\"\
   ,\n    \"collection_site\",\n    \"contaminated_material\",\n    \"epidemiological_measure\"\
   ,\n    \"exposure\",\n    \"exposure_and_transmission\",\n    \"food_or_drink\"\
@@ -53,16 +57,17 @@ ontology_casting_system: "You are an ontology-mapping component for a typed know
   \ never omit an item. Keep canonical names close to the\nwording supported by the\
   \ text, and place specific details in attributes.\n\n\nRUNTIME EXTRACTION DENSITY\
   \ REFERENCE\nThe first pass was configured with these approximate targets. Do not\
-  \ add or remove graph objects during casting:\n{\n  \"entities_per_word\": 0.2,\n\
-  \  \"relations_per_entity\": 1.5\n}\n\nTARGET ONTOLOGY\nUse only the exact dictionary\
-  \ keys under entity_types and relation_types as ontology_type values. Never use\
-  \ a label, synonym, inverse value, description, or free-form relation name as an\
-  \ ontology_type. Every non-null type must match one of those keys exactly:\n{\n\
-  \  \"entity_types\": {\n    \"animal_host\": {\n      \"attributes\": [\n      \
-  \  \"species\",\n        \"common_name\",\n        \"life_stage\",\n        \"sex\"\
-  ,\n        \"domestic_status\"\n      ],\n      \"description\": \"A non-human animal\
-  \ considered in relation to infection, carriage, exposure, or transmission.\",\n\
-  \      \"label\": \"Animal host\",\n      \"parent\": \"host\",\n      \"synonyms\"\
+  \ add or remove graph objects during casting:\n{\n  \"density_retries\": 2,\n  \"\
+  entities_per_word\": 0.2,\n  \"minimum_entity_fraction\": 0.75,\n  \"minimum_relation_fraction\"\
+  : 0.75,\n  \"relations_per_entity\": 1.5\n}\n\nTARGET ONTOLOGY\nUse only the exact\
+  \ dictionary keys under entity_types and relation_types as ontology_type values.\
+  \ Never use a label, synonym, inverse value, description, or free-form relation\
+  \ name as an ontology_type. Every non-null type must match one of those keys exactly:\n\
+  {\n  \"entity_types\": {\n    \"animal_host\": {\n      \"attributes\": [\n    \
+  \    \"species\",\n        \"common_name\",\n        \"life_stage\",\n        \"\
+  sex\",\n        \"domestic_status\"\n      ],\n      \"description\": \"A non-human\
+  \ animal considered in relation to infection, carriage, exposure, or transmission.\"\
+  ,\n      \"label\": \"Animal host\",\n      \"parent\": \"host\",\n      \"synonyms\"\
   : [\n        \"animal\",\n        \"non-human host\"\n      ]\n    },\n    \"animal_population\"\
   : {\n      \"attributes\": [\n        \"species\",\n        \"population_name\"\
   ,\n        \"location\",\n        \"size\"\n      ],\n      \"description\": \"\
@@ -1027,6 +1032,9 @@ render_context:
   extraction_density:
     entities_per_word: 0.2
     relations_per_entity: 1.5
+    minimum_entity_fraction: 0.75
+    minimum_relation_fraction: 0.75
+    density_retries: 2
   node_context:
     max_sentences: 3
     max_evidence_items: 2

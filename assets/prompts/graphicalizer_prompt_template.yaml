@@ -9,11 +9,12 @@ free_extraction_system: |
 
   Pass 1 is deliberately ontology-light. Invent concise, domain-specific entity
   and relation types when useful; do not force mentions into a predefined
-  ontology. Prefer a small graph over exhaustive extraction. Select the entity
-  classes and relation types that are central to the supplied text, regardless
-  of domain. Every relation must connect two extracted entity ids and be
-  supported by an evidence phrase from the text. Do not create unsupported
-  causal claims.
+  ontology. Use the runtime density target to choose a sufficiently detailed
+  graph and aim for the requested entity count when the text supports it,
+  while avoiding duplicates and unsupported claims. Select the entity classes
+  and relation types that explain the supplied text, regardless of domain.
+  Every relation must connect two extracted entity ids and be supported by an
+  evidence phrase from the text. Do not create unsupported causal claims.
 
   The graph should be connected when the text supports a connected interpretation
   and should not contain isolated nodes. Select only entities that participate in

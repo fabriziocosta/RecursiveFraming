@@ -25,6 +25,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import shutil
@@ -932,8 +933,10 @@ class GraphicalizerPrompt:
         free_prompt = (
             f"{self.free_extraction_system}\n\n"
             "RUNTIME EXTRACTION DENSITY\n"
-            "Use these as approximate effort targets for this document; do not "
-            "invent unsupported entities or relations to hit a quota:\n"
+            "Use these effort settings to produce a sufficiently detailed graph; "
+            "do not invent unsupported entities or relations to hit a quota. "
+            "If the first pass is below the configured minimum, a grounded "
+            "expansion pass may follow:\n"
             f"{density_context}\n\n"
             "ONTOLOGY AWARENESS FOR LATER CASTING\n"
             "Pass 1 remains free-form and must not force mentions into these "
@@ -1057,18 +1060,27 @@ class ExtractionDensityConfig:
 
     ``entities_per_word=0.1`` requests roughly one entity per ten words.
     ``relations_per_entity=2.0`` requests roughly two relations per extracted
-    entity. These are guidance targets, not forced truncation rules; the model
-    may return fewer items when the text does not support them.
+    entity. The minimum fraction and retry count control a grounded expansion
+    pass when the first extraction is undersized.
     """
 
     entities_per_word: float = 0.1
     relations_per_entity: float = 2.0
+    minimum_entity_fraction: float = 0.75
+    minimum_relation_fraction: float = 0.75
+    density_retries: int = 2
 
     def __post_init__(self) -> None:
         if self.entities_per_word < 0:
             raise ValueError("entities_per_word must be non-negative.")
         if self.relations_per_entity < 0:
             raise ValueError("relations_per_entity must be non-negative.")
+        if not 0 <= self.minimum_entity_fraction <= 1:
+            raise ValueError("minimum_entity_fraction must be between 0 and 1.")
+        if not 0 <= self.minimum_relation_fraction <= 1:
+            raise ValueError("minimum_relation_fraction must be between 0 and 1.")
+        if self.density_retries < 0:
+            raise ValueError("density_retries must be non-negative.")
 
     def target_counts(self, text: str) -> Dict[str, int]:
         """Calculate approximate counts for one input document."""
@@ -1080,7 +1092,13 @@ class ExtractionDensityConfig:
         return {
             "word_count": word_count,
             "target_entity_count": entity_count,
+            "minimum_entity_count": math.ceil(
+                entity_count * self.minimum_entity_fraction
+            ),
             "target_relation_count": relation_count,
+            "minimum_relation_count": math.ceil(
+                relation_count * self.minimum_relation_fraction
+            ),
         }
 
     def request_payload(self, text: str) -> Dict[str, Any]:
@@ -1091,10 +1109,13 @@ class ExtractionDensityConfig:
             "target_counts": self.target_counts(text),
         }
 
-    def to_mapping(self) -> Dict[str, float]:
+    def to_mapping(self) -> Dict[str, Any]:
         return {
             "entities_per_word": self.entities_per_word,
             "relations_per_entity": self.relations_per_entity,
+            "minimum_entity_fraction": self.minimum_entity_fraction,
+            "minimum_relation_fraction": self.minimum_relation_fraction,
+            "density_retries": self.density_retries,
         }
 
     def to_json(self, *, indent: int = 2) -> str:
@@ -1110,6 +1131,9 @@ class ExtractionDensityConfig:
         return cls(
             entities_per_word=float(data.get("entities_per_word", 0.1)),
             relations_per_entity=float(data.get("relations_per_entity", 2.0)),
+            minimum_entity_fraction=float(data.get("minimum_entity_fraction", 0.75)),
+            minimum_relation_fraction=float(data.get("minimum_relation_fraction", 0.75)),
+            density_retries=int(data.get("density_retries", 2)),
         )
 
     @classmethod
@@ -1401,20 +1425,7 @@ class OpenAIResponsesClient:
             notes=parsed.notes or "",
         )
 
-    def extract_free_graph(self, text: str) -> FreeGraphExtraction:
-        extraction_request = self.extraction_density.request_payload(text)
-        response = self._parse_response(
-            model=self.model,
-            input=[
-                {"role": "system", "content": self.prompt.free_extraction_system},
-                {
-                    "role": "user",
-                    "content": json.dumps(extraction_request, ensure_ascii=False),
-                },
-            ],
-            text_format=self._free_schema,
-        )
-        parsed = self._parsed(response)
+    def _free_graph_from_parsed(self, parsed: Any) -> FreeGraphExtraction:
         return FreeGraphExtraction(
             entities=tuple(
                 FreeEntity(
@@ -1440,6 +1451,68 @@ class OpenAIResponsesClient:
             ),
             notes=parsed.notes or "",
         )
+
+    def _extract_free_graph_once(
+        self,
+        *,
+        system_prompt: str,
+        request_payload: Mapping[str, Any],
+    ) -> FreeGraphExtraction:
+        response = self._parse_response(
+            model=self.model,
+            input=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": json.dumps(request_payload, ensure_ascii=False),
+                },
+            ],
+            text_format=self._free_schema,
+        )
+        return self._free_graph_from_parsed(self._parsed(response))
+
+    def extract_free_graph(self, text: str) -> FreeGraphExtraction:
+        extraction_request = self.extraction_density.request_payload(text)
+        extraction = self._extract_free_graph_once(
+            system_prompt=self.prompt.free_extraction_system,
+            request_payload=extraction_request,
+        )
+        minimum_entity_count = extraction_request["target_counts"]["minimum_entity_count"]
+        minimum_relation_count = extraction_request["target_counts"]["minimum_relation_count"]
+        for attempt in range(self.extraction_density.density_retries):
+            if (
+                len(extraction.entities) >= minimum_entity_count
+                and len(extraction.relations) >= minimum_relation_count
+            ):
+                break
+            expansion_payload = {
+                **extraction_request,
+                "current_extraction": extraction.to_dict(),
+                "current_entity_count": len(extraction.entities),
+                "current_relation_count": len(extraction.relations),
+                "required_minimum_entity_count": minimum_entity_count,
+                "required_minimum_relation_count": minimum_relation_count,
+                "expansion_attempt": attempt + 1,
+            }
+            expansion_system = (
+                f"{self.prompt.free_extraction_system}\n\n"
+                "DENSITY EXPANSION\n"
+                "The previous extraction is below the requested minimum. Return a "
+                "complete replacement extraction that preserves every existing id "
+                "and supported fact, while adding distinct entities and relations "
+                "grounded in the source text. Aim for at least the required minimum "
+                "entity and relation counts. Every added entity must participate in a supported "
+                "relation; do not invent facts, duplicate mentions, or add links "
+                "solely to satisfy the count.\n"
+                f"Required minimum entity count: {minimum_entity_count}\n"
+                f"Required minimum relation count: {minimum_relation_count}\n"
+                f"Expansion attempt: {attempt + 1}"
+            )
+            extraction = self._extract_free_graph_once(
+                system_prompt=expansion_system,
+                request_payload=expansion_payload,
+            )
+        return extraction
 
     def cast_to_ontology(
         self,
@@ -2060,11 +2133,12 @@ described.
 
 Pass 1 is deliberately ontology-light. Invent concise, domain-specific entity
 and relation types when useful; do not force mentions into a predefined
-ontology. Prefer a small graph over exhaustive extraction. Select the entity
-classes and relation types that are central to the supplied text, regardless
-of domain. Every relation must connect two extracted entity ids and be
-supported by an evidence phrase from the text. Do not create unsupported
-causal claims.
+ontology. Use the runtime density target to choose a sufficiently detailed
+graph. Aim for the requested entity count when the text supports it, while
+avoiding duplicates and unsupported claims. Select entity classes and relation
+types that explain the supplied text, regardless of domain. Every relation must
+connect two extracted entity ids and be supported by an evidence phrase from
+the text. Do not create unsupported causal claims.
 
 The graph should be connected when the text supports a connected interpretation
 and should not contain isolated nodes. Select only entities that participate in
