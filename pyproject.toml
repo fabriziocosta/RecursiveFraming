@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "recursive-framing-graphicalizer"
+version = "0.1.0"
+description = "Ontology-aware LLM graphicalization for recursive semantic abstraction"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Fabrizio Costa" }
+]
+dependencies = [
+  "networkx>=3.0",
+  "openai>=1.0",
+  "pydantic>=2.0",
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+render = [
+  "pygraphviz>=1.11",
+]
+dev = [
+  "pytest>=7.0",
+  "jupyter>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/fabriziocosta/RecursiveFraming"
+Repository = "https://github.com/fabriziocosta/RecursiveFraming"
+
+[tool.setuptools.packages.find]
+include = ["graphicalizer*"]

@@ -21,7 +21,6 @@ Reusable inputs live under the assets directory:
 - assets/abstracts/ — source scientific texts
 - assets/ontologies/ — entity and relation ontologies
 - assets/prompts/ — versioned prompt templates
-- assets/config/ — experiment configuration fragments
 
 Implementation code lives under the graphicalizer package.
 
@@ -39,3 +38,16 @@ The preferred interface is configuration-driven:
     )
     graphicalizer = LLMGraphicalizer.from_openai(ontology, config)
     result = graphicalizer.run(text)
+
+## Installation
+
+Install the package in editable mode for local development:
+
+    python -m pip install -e ".[dev]"
+
+For graph rendering through the Python fallback binding:
+
+    python -m pip install -e ".[render]"
+
+Native Graphviz rendering also requires the Graphviz dot executable on the
+system path.
