@@ -1,0 +1,9 @@
+Title: Transmission of henipaviruses.
+PMID: 29035743
+Journal: Current opinion in virology
+Publication date: 2018Feb
+DOI: 10.1016/j.coviro.2017.09.004
+Authors: Sarah Weatherman, Heinz Feldmann, Emmie de Wit
+
+Abstract:
+The genus Henipavirus has expanded rapidly in geographic range, number of species, and host range. Hendra and Nipah virus are two henipaviruses known to cause severe disease in humans with a high case-fatality rate. Pteropid spp. bats are the natural reservoir of Hendra and Nipah virus. From these bats, virus can be transmitted to an amplifying host, horses and pigs, and from these hosts to humans, or the virus can be transmitted directly to humans. Although the main route of shedding varies between host species, close contact is required for transmission in all hosts. Understanding the transmission routes of Hendra and Nipah virus in their respective hosts is essential for devising strategies to block zoonotic transmission.

@@ -1,0 +1,9 @@
+Title: Nipah Virus Outbreaks in India: A Comprehensive Update.
+PMID: 41111832
+Journal: Cureus
+Publication date: 2025Sep
+DOI: 10.7759/cureus.92420
+Authors: Shreya Veggalam, Jayashankar Ca, Ojas Balaji, Mansi Thipani Madhu, Mir Hyder Hussain, Shraddha H, Manish Gr, Koshy Sam, Snigdha Reddy, Gulam Saidunnisa Begum, Venkataramana Kandi
+
+Abstract:
+The Nipah virus (NiV) poses a serious threat to public health. This is a result of its high pathogenicity and zoonotic transmission potential. Since its discovery, NiV has been connected to multiple outbreaks with a high death toll, underscoring the need for effective response and surveillance strategies. Transmission of the virus is strongly associated with its natural reservoirs, fruit bats, as habitat decline has increased the likelihood of zoonotic spillovers. For the development of targeted therapeutics, it is essential to ascertain the host's immune reaction to NiV. Although there are now no viable treatments or vaccines, there is hope because promising candidate vaccines are being researched. This article examines the pathophysiology, immune evasion strategies, transmission dynamics, taxonomical position, and structural features of the NiV, with an emphasis on the epidemiology of the virus in India. This study intends to improve understanding of complex viral risks and the effects of public health campaigns by gathering all available data on treatment and preventive techniques. This will ultimately lead to better epidemic planning and response tactics.

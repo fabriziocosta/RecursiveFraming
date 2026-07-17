@@ -1,0 +1,9 @@
+Title: Animal models of disease shed light on Nipah virus pathogenesis and transmission.
+PMID: 25229234
+Journal: The Journal of pathology
+Publication date: 2015Jan
+DOI: 10.1002/path.4444
+Authors: Emmie de Wit, Vincent J Munster
+
+Abstract:
+Nipah virus is an emerging virus infection that causes yearly disease outbreaks with high case fatality rates in Bangladesh. Nipah virus causes encephalitis and systemic vasculitis, sometimes in combination with respiratory disease. Pteropus species fruit bats are the natural reservoir of Nipah virus and zoonotic transmission can occur directly or via an intermediate host; human-to-human transmission occurs regularly. In this review we discuss the current state of knowledge on the pathogenesis and transmission of Nipah virus, focusing on dissemination of the virus through its host, known determinants of pathogenicity and routes of zoonotic and human-to-human transmission. Since data from human cases are sparse, this knowledge is largely based on the results of studies performed in animal models that recapitulate Nipah virus disease in humans.

@@ -1,0 +1,9 @@
+Title: Nipah virus: pathogenesis, genome, diagnosis, and treatment.
+PMID: 40593310
+Journal: Applied microbiology and biotechnology
+Publication date: 2025Jul01
+DOI: 10.1007/s00253-025-13474-6
+Authors: Rishav Madhukalya, Urvashi Yadav, Hilal Ahmad Parray, Nisha Raj, Santhik Subhasingh Lupitha, Vivek Kumar, Anjali Saroj, Vidushi Agarwal, Dilip Kumar, Supratik Das, Rajesh Kumar
+
+Abstract:
+The highly infectious Nipah virus (NiV) is classified under the Paramyxoviridae family and is categorized under the genus Henipavirus. NiV spreads to humans through zoonotic transmission from reservoir host bats and other intermediate hosts. It is highly contagious and has a high case fatality rate (CFR) of ~ 40-80%. Only sporadic outbreaks have been reported so far, but like SARS-CoV2, NiV has a high pandemic potential and has been put on the World Health Organization (WHO) priority pathogen list. Currently, no clinically approved antivirals, immunotherapy, or vaccines are available to tackle NiV infection, thereby necessitating further research into its life cycle, transmission, and pathogenesis. This detailed review outlines the origin and spread of the Nipah virus, its modes of transmission, risk factors, its genome, key proteins, pathogenesis, and clinical features. We also discuss different diagnostic approaches and ongoing research to develop therapies ranging from antibodies to vaccines. KEY POINTS: •Pandemic preparedness for emerging and re-emerging viruses. •Novel approaches for diagnostics and therapeutics for Nipah viruse. •Global threat from biosafety level 4 pathogens. •Animal models for Nipah virus research.

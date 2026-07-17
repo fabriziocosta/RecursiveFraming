@@ -69,3 +69,11 @@ For graph rendering through the Python fallback binding:
 
 Native Graphviz rendering also requires the Graphviz dot executable on the
 system path.
+
+## PubMed abstracts
+
+The [PubMed download notebook](notebooks/pubmed_abstract_download.ipynb) uses
+NCBI E-utilities to search by keyword phrases and save traceable abstract text
+files under `assets/abstracts/pubmed/`. Set `PUBMED_EMAIL` in the environment
+before running it; the notebook also writes a JSON manifest of the downloaded
+records.

@@ -6,5 +6,7 @@ from .narrative import *
 from .narrative import __all__ as _NARRATIVE_ALL
 from .subgraphs import *
 from .subgraphs import __all__ as _SUBGRAPH_ALL
+from .pubmed import *
+from .pubmed import __all__ as _PUBMED_ALL
 
-__all__ = [*_CORE_ALL, *_NARRATIVE_ALL, *_SUBGRAPH_ALL]
+__all__ = [*_CORE_ALL, *_NARRATIVE_ALL, *_SUBGRAPH_ALL, *_PUBMED_ALL]

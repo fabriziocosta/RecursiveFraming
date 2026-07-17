@@ -1,0 +1,106 @@
+{
+  "downloaded_at": "2026-07-17T21:40:12.451448+00:00",
+  "tool": "recursive-framing-graphicalizer",
+  "query_results": [
+    {
+      "pmid": "40593310",
+      "title": "Nipah virus: pathogenesis, genome, diagnosis, and treatment.",
+      "abstract": "The highly infectious Nipah virus (NiV) is classified under the Paramyxoviridae family and is categorized under the genus Henipavirus. NiV spreads to humans through zoonotic transmission from reservoir host bats and other intermediate hosts. It is highly contagious and has a high case fatality rate (CFR) of ~ 40-80%. Only sporadic outbreaks have been reported so far, but like SARS-CoV2, NiV has a high pandemic potential and has been put on the World Health Organization (WHO) priority pathogen list. Currently, no clinically approved antivirals, immunotherapy, or vaccines are available to tackle NiV infection, thereby necessitating further research into its life cycle, transmission, and pathogenesis. This detailed review outlines the origin and spread of the Nipah virus, its modes of transmission, risk factors, its genome, key proteins, pathogenesis, and clinical features. We also discuss different diagnostic approaches and ongoing research to develop therapies ranging from antibodies to vaccines. KEY POINTS: •Pandemic preparedness for emerging and re-emerging viruses. •Novel approaches for diagnostics and therapeutics for Nipah viruse. •Global threat from biosafety level 4 pathogens. •Animal models for Nipah virus research.",
+      "authors": [
+        "Rishav Madhukalya",
+        "Urvashi Yadav",
+        "Hilal Ahmad Parray",
+        "Nisha Raj",
+        "Santhik Subhasingh Lupitha",
+        "Vivek Kumar",
+        "Anjali Saroj",
+        "Vidushi Agarwal",
+        "Dilip Kumar",
+        "Supratik Das",
+        "Rajesh Kumar"
+      ],
+      "journal": "Applied microbiology and biotechnology",
+      "publication_date": "2025Jul01",
+      "doi": "10.1007/s00253-025-13474-6",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/40593310/",
+      "path": "/Users/f.costa/Code/RecursiveFraming/assets/abstracts/pubmed/pubmed_40593310_nipah_virus_pathogenesis_genome_diagnosis_and_treatment.txt"
+    },
+    {
+      "pmid": "29035743",
+      "title": "Transmission of henipaviruses.",
+      "abstract": "The genus Henipavirus has expanded rapidly in geographic range, number of species, and host range. Hendra and Nipah virus are two henipaviruses known to cause severe disease in humans with a high case-fatality rate. Pteropid spp. bats are the natural reservoir of Hendra and Nipah virus. From these bats, virus can be transmitted to an amplifying host, horses and pigs, and from these hosts to humans, or the virus can be transmitted directly to humans. Although the main route of shedding varies between host species, close contact is required for transmission in all hosts. Understanding the transmission routes of Hendra and Nipah virus in their respective hosts is essential for devising strategies to block zoonotic transmission.",
+      "authors": [
+        "Sarah Weatherman",
+        "Heinz Feldmann",
+        "Emmie de Wit"
+      ],
+      "journal": "Current opinion in virology",
+      "publication_date": "2018Feb",
+      "doi": "10.1016/j.coviro.2017.09.004",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/29035743/",
+      "path": "/Users/f.costa/Code/RecursiveFraming/assets/abstracts/pubmed/pubmed_29035743_transmission_of_henipaviruses.txt"
+    },
+    {
+      "pmid": "25229234",
+      "title": "Animal models of disease shed light on Nipah virus pathogenesis and transmission.",
+      "abstract": "Nipah virus is an emerging virus infection that causes yearly disease outbreaks with high case fatality rates in Bangladesh. Nipah virus causes encephalitis and systemic vasculitis, sometimes in combination with respiratory disease. Pteropus species fruit bats are the natural reservoir of Nipah virus and zoonotic transmission can occur directly or via an intermediate host; human-to-human transmission occurs regularly. In this review we discuss the current state of knowledge on the pathogenesis and transmission of Nipah virus, focusing on dissemination of the virus through its host, known determinants of pathogenicity and routes of zoonotic and human-to-human transmission. Since data from human cases are sparse, this knowledge is largely based on the results of studies performed in animal models that recapitulate Nipah virus disease in humans.",
+      "authors": [
+        "Emmie de Wit",
+        "Vincent J Munster"
+      ],
+      "journal": "The Journal of pathology",
+      "publication_date": "2015Jan",
+      "doi": "10.1002/path.4444",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/25229234/",
+      "path": "/Users/f.costa/Code/RecursiveFraming/assets/abstracts/pubmed/pubmed_25229234_animal_models_of_disease_shed_light_on_nipah_virus_pathogenesis_and_transmission.txt"
+    },
+    {
+      "pmid": "19751584",
+      "title": "Recurrent zoonotic transmission of Nipah virus into humans, Bangladesh, 2001-2007.",
+      "abstract": "Human Nipah outbreaks recur in a specific region and time of year in Bangladesh. Fruit bats are the reservoir host for Nipah virus. We identified 23 introductions of Nipah virus into human populations in central and northwestern Bangladesh from 2001 through 2007. Ten introductions affected multiple persons (median 10). Illness onset occurred from December through May but not every year. We identified 122 cases of human Nipah infection. The mean age of case-patients was 27 years; 87 (71%) died. In 62 (51%) Nipah virus-infected patients, illness developed 5-15 days after close contact with another Nipah case-patient. Nine (7%) Nipah case-patients transmitted virus to others. Nipah case-patients who had difficulty breathing were more likely than those without respiratory difficulty to transmit Nipah (12% vs. 0%, p = 0.03). Although a small minority of infected patients transmit Nipah virus, more than half of identified cases result from person-to-person transmission. Interventions to prevent virus transmission from bats to humans and from person to person are needed.",
+      "authors": [
+        "Stephen P Luby",
+        "M Jahangir Hossain",
+        "Emily S Gurley",
+        "Be Nazir Ahmed",
+        "Shakila Banu",
+        "Salah Uddin Khan",
+        "Nusrat Homaira",
+        "Paul A Rota",
+        "Pierre E Rollin",
+        "James A Comer",
+        "Eben Kenah",
+        "Thomas G Ksiazek",
+        "Mahmudur Rahman"
+      ],
+      "journal": "Emerging infectious diseases",
+      "publication_date": "2009Aug",
+      "doi": "10.3201/eid1508.081237",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/19751584/",
+      "path": "/Users/f.costa/Code/RecursiveFraming/assets/abstracts/pubmed/pubmed_19751584_recurrent_zoonotic_transmission_of_nipah_virus_into_humans_bangladesh_2001_2007.txt"
+    },
+    {
+      "pmid": "41111832",
+      "title": "Nipah Virus Outbreaks in India: A Comprehensive Update.",
+      "abstract": "The Nipah virus (NiV) poses a serious threat to public health. This is a result of its high pathogenicity and zoonotic transmission potential. Since its discovery, NiV has been connected to multiple outbreaks with a high death toll, underscoring the need for effective response and surveillance strategies. Transmission of the virus is strongly associated with its natural reservoirs, fruit bats, as habitat decline has increased the likelihood of zoonotic spillovers. For the development of targeted therapeutics, it is essential to ascertain the host's immune reaction to NiV. Although there are now no viable treatments or vaccines, there is hope because promising candidate vaccines are being researched. This article examines the pathophysiology, immune evasion strategies, transmission dynamics, taxonomical position, and structural features of the NiV, with an emphasis on the epidemiology of the virus in India. This study intends to improve understanding of complex viral risks and the effects of public health campaigns by gathering all available data on treatment and preventive techniques. This will ultimately lead to better epidemic planning and response tactics.",
+      "authors": [
+        "Shreya Veggalam",
+        "Jayashankar Ca",
+        "Ojas Balaji",
+        "Mansi Thipani Madhu",
+        "Mir Hyder Hussain",
+        "Shraddha H",
+        "Manish Gr",
+        "Koshy Sam",
+        "Snigdha Reddy",
+        "Gulam Saidunnisa Begum",
+        "Venkataramana Kandi"
+      ],
+      "journal": "Cureus",
+      "publication_date": "2025Sep",
+      "doi": "10.7759/cureus.92420",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/41111832/",
+      "path": "/Users/f.costa/Code/RecursiveFraming/assets/abstracts/pubmed/pubmed_41111832_nipah_virus_outbreaks_in_india_a_comprehensive_update.txt"
+    }
+  ]
+}
