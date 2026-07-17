@@ -1067,7 +1067,6 @@ class ExtractionDensityConfig:
     entities_per_word: float = 0.1
     relations_per_entity: float = 2.0
     minimum_entity_fraction: float = 0.75
-    minimum_relation_fraction: float = 0.75
     density_retries: int = 2
 
     def __post_init__(self) -> None:
@@ -1077,8 +1076,6 @@ class ExtractionDensityConfig:
             raise ValueError("relations_per_entity must be non-negative.")
         if not 0 <= self.minimum_entity_fraction <= 1:
             raise ValueError("minimum_entity_fraction must be between 0 and 1.")
-        if not 0 <= self.minimum_relation_fraction <= 1:
-            raise ValueError("minimum_relation_fraction must be between 0 and 1.")
         if self.density_retries < 0:
             raise ValueError("density_retries must be non-negative.")
 
@@ -1096,9 +1093,6 @@ class ExtractionDensityConfig:
                 entity_count * self.minimum_entity_fraction
             ),
             "target_relation_count": relation_count,
-            "minimum_relation_count": math.ceil(
-                relation_count * self.minimum_relation_fraction
-            ),
         }
 
     def request_payload(self, text: str) -> Dict[str, Any]:
@@ -1114,7 +1108,6 @@ class ExtractionDensityConfig:
             "entities_per_word": self.entities_per_word,
             "relations_per_entity": self.relations_per_entity,
             "minimum_entity_fraction": self.minimum_entity_fraction,
-            "minimum_relation_fraction": self.minimum_relation_fraction,
             "density_retries": self.density_retries,
         }
 
@@ -1132,7 +1125,6 @@ class ExtractionDensityConfig:
             entities_per_word=float(data.get("entities_per_word", 0.1)),
             relations_per_entity=float(data.get("relations_per_entity", 2.0)),
             minimum_entity_fraction=float(data.get("minimum_entity_fraction", 0.75)),
-            minimum_relation_fraction=float(data.get("minimum_relation_fraction", 0.75)),
             density_retries=int(data.get("density_retries", 2)),
         )
 
@@ -1471,6 +1463,28 @@ class OpenAIResponsesClient:
         )
         return self._free_graph_from_parsed(self._parsed(response))
 
+    @staticmethod
+    def _expansion_preserves_previous(
+        previous: FreeGraphExtraction,
+        candidate: FreeGraphExtraction,
+    ) -> bool:
+        previous_entities = {entity.entity_id for entity in previous.entities}
+        candidate_entities = {entity.entity_id for entity in candidate.entities}
+        if not previous_entities <= candidate_entities:
+            return False
+        previous_relations = {
+            relation.relation_id: (relation.source_id, relation.target_id)
+            for relation in previous.relations
+        }
+        candidate_relations = {
+            relation.relation_id: (relation.source_id, relation.target_id)
+            for relation in candidate.relations
+        }
+        return all(
+            candidate_relations.get(relation_id) == endpoints
+            for relation_id, endpoints in previous_relations.items()
+        )
+
     def extract_free_graph(self, text: str) -> FreeGraphExtraction:
         extraction_request = self.extraction_density.request_payload(text)
         extraction = self._extract_free_graph_once(
@@ -1478,20 +1492,17 @@ class OpenAIResponsesClient:
             request_payload=extraction_request,
         )
         minimum_entity_count = extraction_request["target_counts"]["minimum_entity_count"]
-        minimum_relation_count = extraction_request["target_counts"]["minimum_relation_count"]
         for attempt in range(self.extraction_density.density_retries):
-            if (
-                len(extraction.entities) >= minimum_entity_count
-                and len(extraction.relations) >= minimum_relation_count
-            ):
+            validation_issues = validate_free_extraction(extraction)
+            if len(extraction.entities) >= minimum_entity_count and not validation_issues:
                 break
             expansion_payload = {
                 **extraction_request,
                 "current_extraction": extraction.to_dict(),
                 "current_entity_count": len(extraction.entities),
                 "current_relation_count": len(extraction.relations),
+                "current_validation_issues": validation_issues,
                 "required_minimum_entity_count": minimum_entity_count,
-                "required_minimum_relation_count": minimum_relation_count,
                 "expansion_attempt": attempt + 1,
             }
             expansion_system = (
@@ -1501,17 +1512,25 @@ class OpenAIResponsesClient:
                 "complete replacement extraction that preserves every existing id "
                 "and supported fact, while adding distinct entities and relations "
                 "grounded in the source text. Aim for at least the required minimum "
-                "entity and relation counts. Every added entity must participate in a supported "
+                "entity count. Every added entity must participate in a supported "
                 "relation; do not invent facts, duplicate mentions, or add links "
-                "solely to satisfy the count.\n"
+                "solely to satisfy the count. Ensure every relation endpoint refers "
+                "to an entity returned in the same extraction. Correct any listed "
+                "validation issues.\n"
+                f"Current validation issues: {json.dumps(validation_issues, ensure_ascii=False)}\n"
                 f"Required minimum entity count: {minimum_entity_count}\n"
-                f"Required minimum relation count: {minimum_relation_count}\n"
                 f"Expansion attempt: {attempt + 1}"
             )
-            extraction = self._extract_free_graph_once(
+            candidate = self._extract_free_graph_once(
                 system_prompt=expansion_system,
                 request_payload=expansion_payload,
             )
+            candidate_issues = validate_free_extraction(candidate)
+            if (
+                not candidate_issues
+                and self._expansion_preserves_previous(extraction, candidate)
+            ):
+                extraction = candidate
         return extraction
 
     def cast_to_ontology(

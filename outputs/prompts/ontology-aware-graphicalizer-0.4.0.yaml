@@ -20,30 +20,30 @@ free_extraction_system: "You are a domain-independent scientific and technical i
   \ settings to produce a sufficiently detailed graph; do not invent unsupported entities\
   \ or relations to hit a quota. If the first pass is below the configured minimum,\
   \ a grounded expansion pass may follow:\n{\n  \"density_retries\": 2,\n  \"entities_per_word\"\
-  : 0.2,\n  \"minimum_entity_fraction\": 0.75,\n  \"minimum_relation_fraction\": 0.75,\n\
-  \  \"relations_per_entity\": 1.5\n}\n\nONTOLOGY AWARENESS FOR LATER CASTING\nPass\
-  \ 1 remains free-form and must not force mentions into these identifiers, but the\
-  \ following vocabulary will be used in pass 2:\n{\n  \"entity_type_ids\": [\n  \
-  \  \"animal_host\",\n    \"animal_population\",\n    \"assay\",\n    \"bacterial_pathogen\"\
-  ,\n    \"biological_host\",\n    \"case\",\n    \"clinical_entity\",\n    \"clinical_syndrome\"\
-  ,\n    \"collection_site\",\n    \"contaminated_material\",\n    \"epidemiological_measure\"\
-  ,\n    \"exposure\",\n    \"exposure_and_transmission\",\n    \"food_or_drink\"\
-  ,\n    \"fungal_pathogen\",\n    \"genomic_sequence\",\n    \"geographic_location\"\
-  ,\n    \"host\",\n    \"human_host\",\n    \"human_to_human_transmission\",\n  \
-  \  \"immune_response\",\n    \"infection_control_measure\",\n    \"infectious_disease\"\
-  ,\n    \"intervention\",\n    \"investigation_entity\",\n    \"outbreak\",\n   \
-  \ \"pathogen\",\n    \"pathogen_component\",\n    \"pathogen_entity\",\n    \"place_and_time\"\
-  ,\n    \"prevention_measure\",\n    \"reservoir_host\",\n    \"specimen\",\n   \
-  \ \"surveillance_activity\",\n    \"symptom_or_sign\",\n    \"test_result\",\n \
-  \   \"time_period\",\n    \"transmission_route\",\n    \"vector\",\n    \"virus\"\
-  ,\n    \"virus_family\",\n    \"zoonotic_spillover\"\n  ],\n  \"relation_type_ids\"\
-  : [\n    \"associated_with\",\n    \"belongs_to_outbreak\",\n    \"carried_by\"\
-  ,\n    \"causes_infection\",\n    \"collected_at\",\n    \"consumes\",\n    \"contaminates\"\
-  ,\n    \"derived_from\",\n    \"detects\",\n    \"exposes\",\n    \"has_symptom\"\
-  ,\n    \"infects\",\n    \"maintained_in\",\n    \"occurred_during\",\n    \"occurred_in\"\
-  ,\n    \"presents_with\",\n    \"prevents\",\n    \"sampled_from\",\n    \"spills_over_from\"\
-  ,\n    \"subtype_of\",\n    \"supports\",\n    \"tested_by\",\n    \"transmitted_by\"\
-  ,\n    \"transmitted_to\",\n    \"yields_result\"\n  ]\n}"
+  : 0.2,\n  \"minimum_entity_fraction\": 0.75,\n  \"relations_per_entity\": 1.5\n\
+  }\n\nONTOLOGY AWARENESS FOR LATER CASTING\nPass 1 remains free-form and must not\
+  \ force mentions into these identifiers, but the following vocabulary will be used\
+  \ in pass 2:\n{\n  \"entity_type_ids\": [\n    \"animal_host\",\n    \"animal_population\"\
+  ,\n    \"assay\",\n    \"bacterial_pathogen\",\n    \"biological_host\",\n    \"\
+  case\",\n    \"clinical_entity\",\n    \"clinical_syndrome\",\n    \"collection_site\"\
+  ,\n    \"contaminated_material\",\n    \"epidemiological_measure\",\n    \"exposure\"\
+  ,\n    \"exposure_and_transmission\",\n    \"food_or_drink\",\n    \"fungal_pathogen\"\
+  ,\n    \"genomic_sequence\",\n    \"geographic_location\",\n    \"host\",\n    \"\
+  human_host\",\n    \"human_to_human_transmission\",\n    \"immune_response\",\n\
+  \    \"infection_control_measure\",\n    \"infectious_disease\",\n    \"intervention\"\
+  ,\n    \"investigation_entity\",\n    \"outbreak\",\n    \"pathogen\",\n    \"pathogen_component\"\
+  ,\n    \"pathogen_entity\",\n    \"place_and_time\",\n    \"prevention_measure\"\
+  ,\n    \"reservoir_host\",\n    \"specimen\",\n    \"surveillance_activity\",\n\
+  \    \"symptom_or_sign\",\n    \"test_result\",\n    \"time_period\",\n    \"transmission_route\"\
+  ,\n    \"vector\",\n    \"virus\",\n    \"virus_family\",\n    \"zoonotic_spillover\"\
+  \n  ],\n  \"relation_type_ids\": [\n    \"associated_with\",\n    \"belongs_to_outbreak\"\
+  ,\n    \"carried_by\",\n    \"causes_infection\",\n    \"collected_at\",\n    \"\
+  consumes\",\n    \"contaminates\",\n    \"derived_from\",\n    \"detects\",\n  \
+  \  \"exposes\",\n    \"has_symptom\",\n    \"infects\",\n    \"maintained_in\",\n\
+  \    \"occurred_during\",\n    \"occurred_in\",\n    \"presents_with\",\n    \"\
+  prevents\",\n    \"sampled_from\",\n    \"spills_over_from\",\n    \"subtype_of\"\
+  ,\n    \"supports\",\n    \"tested_by\",\n    \"transmitted_by\",\n    \"transmitted_to\"\
+  ,\n    \"yields_result\"\n  ]\n}"
 ontology_casting_system: "You are an ontology-mapping component for a typed knowledge\
   \ graph.\nGiven the source text, a free-form extraction, and an ontology, assign\
   \ each\nextracted entity exactly one ontology entity type when justified. Assign\
@@ -58,32 +58,32 @@ ontology_casting_system: "You are an ontology-mapping component for a typed know
   \ text, and place specific details in attributes.\n\n\nRUNTIME EXTRACTION DENSITY\
   \ REFERENCE\nThe first pass was configured with these approximate targets. Do not\
   \ add or remove graph objects during casting:\n{\n  \"density_retries\": 2,\n  \"\
-  entities_per_word\": 0.2,\n  \"minimum_entity_fraction\": 0.75,\n  \"minimum_relation_fraction\"\
-  : 0.75,\n  \"relations_per_entity\": 1.5\n}\n\nTARGET ONTOLOGY\nUse only the exact\
-  \ dictionary keys under entity_types and relation_types as ontology_type values.\
-  \ Never use a label, synonym, inverse value, description, or free-form relation\
-  \ name as an ontology_type. Every non-null type must match one of those keys exactly:\n\
-  {\n  \"entity_types\": {\n    \"animal_host\": {\n      \"attributes\": [\n    \
-  \    \"species\",\n        \"common_name\",\n        \"life_stage\",\n        \"\
-  sex\",\n        \"domestic_status\"\n      ],\n      \"description\": \"A non-human\
-  \ animal considered in relation to infection, carriage, exposure, or transmission.\"\
-  ,\n      \"label\": \"Animal host\",\n      \"parent\": \"host\",\n      \"synonyms\"\
-  : [\n        \"animal\",\n        \"non-human host\"\n      ]\n    },\n    \"animal_population\"\
-  : {\n      \"attributes\": [\n        \"species\",\n        \"population_name\"\
-  ,\n        \"location\",\n        \"size\"\n      ],\n      \"description\": \"\
-  A geographically or biologically defined group of non-human animals.\",\n      \"\
-  label\": \"Animal population\",\n      \"parent\": \"biological_host\",\n      \"\
-  synonyms\": [\n        \"wildlife population\",\n        \"livestock population\"\
-  ,\n        \"animal group\"\n      ]\n    },\n    \"assay\": {\n      \"attributes\"\
-  : [\n        \"assay_name\",\n        \"target\",\n        \"platform\",\n     \
-  \   \"sensitivity\",\n        \"specificity\"\n      ],\n      \"description\":\
-  \ \"A laboratory procedure used to detect, identify, quantify, or characterize a\
-  \ pathogen or immune response.\",\n      \"examples\": [\n        \"reverse-transcription\
-  \ polymerase chain reaction\",\n        \"enzyme-linked immunosorbent assay\"\n\
-  \      ],\n      \"label\": \"Laboratory assay\",\n      \"parent\": \"investigation_entity\"\
-  ,\n      \"reference_terms\": [\n        {\n          \"id\": \"genepio:OBI:0000070\"\
-  ,\n          \"label\": \"assay\"\n        },\n        {\n          \"id\": \"genepio:OBI:0600047\"\
-  ,\n          \"label\": \"sequencing assay\"\n        }\n      ],\n      \"synonyms\"\
+  entities_per_word\": 0.2,\n  \"minimum_entity_fraction\": 0.75,\n  \"relations_per_entity\"\
+  : 1.5\n}\n\nTARGET ONTOLOGY\nUse only the exact dictionary keys under entity_types\
+  \ and relation_types as ontology_type values. Never use a label, synonym, inverse\
+  \ value, description, or free-form relation name as an ontology_type. Every non-null\
+  \ type must match one of those keys exactly:\n{\n  \"entity_types\": {\n    \"animal_host\"\
+  : {\n      \"attributes\": [\n        \"species\",\n        \"common_name\",\n \
+  \       \"life_stage\",\n        \"sex\",\n        \"domestic_status\"\n      ],\n\
+  \      \"description\": \"A non-human animal considered in relation to infection,\
+  \ carriage, exposure, or transmission.\",\n      \"label\": \"Animal host\",\n \
+  \     \"parent\": \"host\",\n      \"synonyms\": [\n        \"animal\",\n      \
+  \  \"non-human host\"\n      ]\n    },\n    \"animal_population\": {\n      \"attributes\"\
+  : [\n        \"species\",\n        \"population_name\",\n        \"location\",\n\
+  \        \"size\"\n      ],\n      \"description\": \"A geographically or biologically\
+  \ defined group of non-human animals.\",\n      \"label\": \"Animal population\"\
+  ,\n      \"parent\": \"biological_host\",\n      \"synonyms\": [\n        \"wildlife\
+  \ population\",\n        \"livestock population\",\n        \"animal group\"\n \
+  \     ]\n    },\n    \"assay\": {\n      \"attributes\": [\n        \"assay_name\"\
+  ,\n        \"target\",\n        \"platform\",\n        \"sensitivity\",\n      \
+  \  \"specificity\"\n      ],\n      \"description\": \"A laboratory procedure used\
+  \ to detect, identify, quantify, or characterize a pathogen or immune response.\"\
+  ,\n      \"examples\": [\n        \"reverse-transcription polymerase chain reaction\"\
+  ,\n        \"enzyme-linked immunosorbent assay\"\n      ],\n      \"label\": \"\
+  Laboratory assay\",\n      \"parent\": \"investigation_entity\",\n      \"reference_terms\"\
+  : [\n        {\n          \"id\": \"genepio:OBI:0000070\",\n          \"label\"\
+  : \"assay\"\n        },\n        {\n          \"id\": \"genepio:OBI:0600047\",\n\
+  \          \"label\": \"sequencing assay\"\n        }\n      ],\n      \"synonyms\"\
   : [\n        \"test\",\n        \"laboratory test\",\n        \"diagnostic assay\"\
   \n      ]\n    },\n    \"bacterial_pathogen\": {\n      \"attributes\": [\n    \
   \    \"canonical_name\",\n        \"species\",\n        \"strain\",\n        \"\
@@ -1033,7 +1033,6 @@ render_context:
     entities_per_word: 0.2
     relations_per_entity: 1.5
     minimum_entity_fraction: 0.75
-    minimum_relation_fraction: 0.75
     density_retries: 2
   node_context:
     max_sentences: 3
