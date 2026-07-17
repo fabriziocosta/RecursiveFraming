@@ -32,13 +32,17 @@ The preferred interface is configuration-driven:
         "assets/ontologies/entity_ontology_microbiology.yaml"
     )
     config = GraphicalizerConfig(
+        provider="openai",
         model="gpt-4o-mini",
         prompt_template_path="assets/prompts/graphicalizer_prompt_template.yaml",
         prompt_snapshot_path="outputs/prompts/run.yaml",
         casting_retries=1,
     )
-    graphicalizer = LLMGraphicalizer.from_openai(ontology, config)
+    graphicalizer = LLMGraphicalizer.from_provider(ontology, config)
     result = graphicalizer.run(text)
+
+Set `provider="ollama"` and choose a locally installed model such as
+`llama3.2` to use Ollama. The Ollama server must be running locally.
 
 The ontology-casting pass validates every returned type against the ontology
 keys. By default, one repair attempt is made when the model emits an invalid
@@ -49,6 +53,11 @@ label; set `casting_retries=0` to disable that extra API call.
 Install the package in editable mode for local development:
 
     python -m pip install -e ".[dev]"
+
+Install the provider extra you intend to use:
+
+    python -m pip install -e ".[openai]"
+    python -m pip install -e ".[ollama]"
 
 For graph rendering through the Python fallback binding:
 

@@ -825,4 +825,4 @@ render_context:
     max_evidence_items: 2
     include_evidence: true
     include_uncertainty: true
-  model: gpt-4o-mini
+  model: gemma4:12b-mlx

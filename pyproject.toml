@@ -14,7 +14,6 @@ authors = [
 ]
 dependencies = [
   "networkx>=3.0",
-  "openai>=1.0",
   "pydantic>=2.0",
   "PyYAML>=6.0",
 ]
@@ -26,6 +25,12 @@ render = [
 dev = [
   "pytest>=7.0",
   "jupyter>=1.0",
+]
+ollama = [
+  "ollama>=0.4.0",
+]
+openai = [
+  "openai>=1.0",
 ]
 
 [project.urls]

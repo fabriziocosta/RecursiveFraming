@@ -161,7 +161,12 @@ class SubgraphNarrativePrompt:
 
 
 class OpenAISubgraphNarrator:
-    """Generate a grounded narrative for a graph substructure."""
+    """Generate a grounded narrative through a structured LLM client.
+
+    The historical class name is retained for compatibility. The client only
+    needs the internal responses.parse contract, so it also works with the
+    Ollama adapter.
+    """
 
     def __init__(
         self,
@@ -276,11 +281,14 @@ class OpenAISubgraphNarrator:
         )
 
 
+SubgraphNarrator = OpenAISubgraphNarrator
+
+
 __all__ = [
     "OpenAISubgraphNarrator",
+    "SubgraphNarrator",
     "SUBGRAPH_NARRATIVE_SYSTEM_PROMPT",
     "SubgraphNarrativeConfig",
     "SubgraphNarrativePrompt",
     "SubgraphNarrativeResult",
 ]
-

@@ -1602,7 +1602,7 @@ class LLMGraphicalizer:
     relations between them.
     """
 
-+    @classmethod
+    @classmethod
     def from_llm_client(
         cls,
         ontology: Ontology,
@@ -1705,7 +1705,6 @@ class LLMGraphicalizer:
 
     @classmethod
     def from_openai(
-
         cls,
         ontology: Ontology,
         config: Optional[GraphicalizerConfig] = None,
