@@ -8,5 +8,7 @@ from .subgraphs import *
 from .subgraphs import __all__ as _SUBGRAPH_ALL
 from .pubmed import *
 from .pubmed import __all__ as _PUBMED_ALL
+from .ontology_assembly import *
+from .ontology_assembly import __all__ as _ONTOLOGY_ASSEMBLY_ALL
 
-__all__ = [*_CORE_ALL, *_NARRATIVE_ALL, *_SUBGRAPH_ALL, *_PUBMED_ALL]
+__all__ = [*_CORE_ALL, *_NARRATIVE_ALL, *_SUBGRAPH_ALL, *_PUBMED_ALL, *_ONTOLOGY_ASSEMBLY_ALL]
