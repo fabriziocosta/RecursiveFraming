@@ -451,6 +451,20 @@ entity_types:
     description: A study, outbreak, sample, test, result, or epidemiological grouping
       used to investigate infection.
     abstract: false
+  biological_feature:
+    label: Biological feature
+    parent: investigation_entity
+    synonyms:
+    - biological characteristic
+    - biological property
+    - biological trait
+    description: A biologically meaningful feature, property, or characteristic described
+      or examined in the source text.
+    attributes:
+    - feature_name
+    - value
+    - organism
+    - evidence_type
   outbreak:
     label: Outbreak or case cluster
     parent: investigation_entity
@@ -863,6 +877,12 @@ relation_types:
     inverse: supported_by
     description: An observation, result, or sequence analysis provides evidence for
       a spillover interpretation.
+  examines_feature:
+    label: examines feature
+    domain: investigation_entity
+    range: biological_feature
+    inverse: feature_examined_by
+    description: An investigation, study, or analysis examines a biological feature.
   prevents:
     label: prevents or reduces
     domain: intervention

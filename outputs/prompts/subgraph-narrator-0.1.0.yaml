@@ -41,38 +41,45 @@ system: "You are a scientific narrative component. Given a connected graph subst
   \ associated with infection or disease.\",\n      \"examples\": [\n        \"Bacillus\
   \ anthracis\",\n        \"Escherichia coli\"\n      ],\n      \"label\": \"Bacterial\
   \ pathogen\",\n      \"parent\": \"pathogen\",\n      \"synonyms\": [\n        \"\
-  bacterium\",\n        \"bacterial agent\"\n      ]\n    },\n    \"biological_host\"\
-  : {\n      \"abstract\": false,\n      \"description\": \"An organism or host population\
-  \ that carries, acquires, or transmits a pathogen.\",\n      \"label\": \"Biological\
-  \ host\"\n    },\n    \"case\": {\n      \"attributes\": [\n        \"case_status\"\
-  ,\n        \"confirmation_method\",\n        \"onset_date\",\n        \"outcome\"\
-  \n      ],\n      \"description\": \"An individual occurrence of disease or infection\
-  \ meeting a stated clinical or laboratory definition.\",\n      \"label\": \"Human\
-  \ case\",\n      \"parent\": \"investigation_entity\",\n      \"synonyms\": [\n\
-  \        \"patient case\",\n        \"confirmed case\",\n        \"suspected case\"\
-  \n      ]\n    },\n    \"clinical_entity\": {\n      \"abstract\": false,\n    \
-  \  \"description\": \"A disease, clinical presentation, symptom, sign, or biological\
-  \ state observed in a patient.\",\n      \"label\": \"Clinical entity\"\n    },\n\
-  \    \"clinical_syndrome\": {\n      \"attributes\": [\n        \"syndrome_name\"\
-  ,\n        \"severity\",\n        \"onset\",\n        \"duration\"\n      ],\n \
-  \     \"description\": \"A recognizable combination of clinical findings associated\
-  \ with a disease or infection.\",\n      \"examples\": [\n        \"acute febrile\
-  \ encephalitis\"\n      ],\n      \"label\": \"Clinical syndrome\",\n      \"parent\"\
-  : \"clinical_entity\",\n      \"synonyms\": [\n        \"syndrome\",\n        \"\
-  clinical presentation\"\n      ]\n    },\n    \"collection_site\": {\n      \"attributes\"\
-  : [\n        \"site_name\",\n        \"site_type\",\n        \"latitude\",\n   \
-  \     \"longitude\"\n      ],\n      \"description\": \"A location where a specimen,\
-  \ environmental sample, or animal sample is collected.\",\n      \"label\": \"Collection\
-  \ site\",\n      \"parent\": \"geographic_location\",\n      \"synonyms\": [\n \
-  \       \"sampling site\",\n        \"field site\",\n        \"study site\"\n  \
-  \    ]\n    },\n    \"contaminated_material\": {\n      \"attributes\": [\n    \
-  \    \"material_type\",\n        \"contamination_status\",\n        \"collection_site\"\
-  \n      ],\n      \"description\": \"A non-host material containing or suspected\
-  \ to contain a pathogen.\",\n      \"examples\": [\n        \"raw date-palm sap\"\
-  ,\n        \"residual sap\",\n        \"protective covering\"\n      ],\n      \"\
-  label\": \"Contaminated material\",\n      \"parent\": \"exposure_and_transmission\"\
-  ,\n      \"synonyms\": [\n        \"contaminated food\",\n        \"contaminated\
-  \ environmental material\",\n        \"vehicle\"\n      ]\n    },\n    \"epidemiological_measure\"\
+  bacterium\",\n        \"bacterial agent\"\n      ]\n    },\n    \"biological_feature\"\
+  : {\n      \"attributes\": [\n        \"feature_name\",\n        \"value\",\n  \
+  \      \"organism\",\n        \"evidence_type\"\n      ],\n      \"description\"\
+  : \"A biologically meaningful feature, property, or characteristic described or\
+  \ examined in the source text.\",\n      \"label\": \"Biological feature\",\n  \
+  \    \"parent\": \"investigation_entity\",\n      \"synonyms\": [\n        \"biological\
+  \ characteristic\",\n        \"biological property\",\n        \"biological trait\"\
+  \n      ]\n    },\n    \"biological_host\": {\n      \"abstract\": false,\n    \
+  \  \"description\": \"An organism or host population that carries, acquires, or\
+  \ transmits a pathogen.\",\n      \"label\": \"Biological host\"\n    },\n    \"\
+  case\": {\n      \"attributes\": [\n        \"case_status\",\n        \"confirmation_method\"\
+  ,\n        \"onset_date\",\n        \"outcome\"\n      ],\n      \"description\"\
+  : \"An individual occurrence of disease or infection meeting a stated clinical or\
+  \ laboratory definition.\",\n      \"label\": \"Human case\",\n      \"parent\"\
+  : \"investigation_entity\",\n      \"synonyms\": [\n        \"patient case\",\n\
+  \        \"confirmed case\",\n        \"suspected case\"\n      ]\n    },\n    \"\
+  clinical_entity\": {\n      \"abstract\": false,\n      \"description\": \"A disease,\
+  \ clinical presentation, symptom, sign, or biological state observed in a patient.\"\
+  ,\n      \"label\": \"Clinical entity\"\n    },\n    \"clinical_syndrome\": {\n\
+  \      \"attributes\": [\n        \"syndrome_name\",\n        \"severity\",\n  \
+  \      \"onset\",\n        \"duration\"\n      ],\n      \"description\": \"A recognizable\
+  \ combination of clinical findings associated with a disease or infection.\",\n\
+  \      \"examples\": [\n        \"acute febrile encephalitis\"\n      ],\n     \
+  \ \"label\": \"Clinical syndrome\",\n      \"parent\": \"clinical_entity\",\n  \
+  \    \"synonyms\": [\n        \"syndrome\",\n        \"clinical presentation\"\n\
+  \      ]\n    },\n    \"collection_site\": {\n      \"attributes\": [\n        \"\
+  site_name\",\n        \"site_type\",\n        \"latitude\",\n        \"longitude\"\
+  \n      ],\n      \"description\": \"A location where a specimen, environmental\
+  \ sample, or animal sample is collected.\",\n      \"label\": \"Collection site\"\
+  ,\n      \"parent\": \"geographic_location\",\n      \"synonyms\": [\n        \"\
+  sampling site\",\n        \"field site\",\n        \"study site\"\n      ]\n   \
+  \ },\n    \"contaminated_material\": {\n      \"attributes\": [\n        \"material_type\"\
+  ,\n        \"contamination_status\",\n        \"collection_site\"\n      ],\n  \
+  \    \"description\": \"A non-host material containing or suspected to contain a\
+  \ pathogen.\",\n      \"examples\": [\n        \"raw date-palm sap\",\n        \"\
+  residual sap\",\n        \"protective covering\"\n      ],\n      \"label\": \"\
+  Contaminated material\",\n      \"parent\": \"exposure_and_transmission\",\n   \
+  \   \"synonyms\": [\n        \"contaminated food\",\n        \"contaminated environmental\
+  \ material\",\n        \"vehicle\"\n      ]\n    },\n    \"epidemiological_measure\"\
   : {\n      \"attributes\": [\n        \"measure_name\",\n        \"value\",\n  \
   \      \"confidence_interval\",\n        \"p_value\",\n        \"adjustment_set\"\
   \n      ],\n      \"description\": \"A quantitative estimate describing infection\
@@ -398,59 +405,63 @@ system: "You are a scientific narrative component. Given a connected graph subst
   \      \"description\": \"A result indicates the presence of a pathogen or pathogen\
   \ component.\",\n      \"domain\": \"test_result\",\n      \"inverse\": \"detected_by\"\
   ,\n      \"label\": \"detects\",\n      \"range\": \"pathogen_entity\"\n    },\n\
-  \    \"exposes\": {\n      \"description\": \"A material or source creates an exposure\
-  \ opportunity for a host.\",\n      \"domain\": \"contaminated_material\",\n   \
-  \   \"inverse\": \"exposed_to\",\n      \"label\": \"exposes\",\n      \"range\"\
-  : \"host\"\n    },\n    \"has_symptom\": {\n      \"description\": \"A host exhibits\
-  \ a symptom or clinical sign.\",\n      \"domain\": \"host\",\n      \"inverse\"\
-  : \"symptom_of\",\n      \"label\": \"has symptom or sign\",\n      \"range\": \"\
-  symptom_or_sign\"\n    },\n    \"infects\": {\n      \"description\": \"A pathogen\
-  \ is detected in or associated with infection of a host.\",\n      \"domain\": \"\
-  pathogen\",\n      \"inverse\": \"infected_by\",\n      \"label\": \"infects\",\n\
-  \      \"range\": \"host\"\n    },\n    \"maintained_in\": {\n      \"description\"\
-  : \"A pathogen is maintained in a reservoir host population.\",\n      \"domain\"\
-  : \"pathogen\",\n      \"inverse\": \"maintains_pathogen\",\n      \"label\": \"\
-  maintained in\",\n      \"range\": \"reservoir_host\"\n    },\n    \"occurred_during\"\
-  : {\n      \"description\": \"An outbreak, exposure, or case occurred during a temporal\
-  \ interval.\",\n      \"domain\": \"outbreak\",\n      \"inverse\": \"time_of_outbreak\"\
-  ,\n      \"label\": \"occurred during\",\n      \"range\": \"time_period\"\n   \
-  \ },\n    \"occurred_in\": {\n      \"description\": \"An outbreak or case cluster\
-  \ occurred in a location.\",\n      \"domain\": \"outbreak\",\n      \"inverse\"\
-  : \"location_of_outbreak\",\n      \"label\": \"occurred in\",\n      \"range\"\
-  : \"geographic_location\"\n    },\n    \"presents_with\": {\n      \"description\"\
-  : \"A case has a documented clinical syndrome.\",\n      \"domain\": \"case\",\n\
-  \      \"inverse\": \"presentation_of\",\n      \"label\": \"presents with\",\n\
-  \      \"range\": \"clinical_syndrome\"\n    },\n    \"prevents\": {\n      \"description\"\
-  : \"An intervention is intended to prevent or reduce an exposure or transmission\
-  \ event.\",\n      \"domain\": \"intervention\",\n      \"inverse\": \"reduced_by\"\
-  ,\n      \"label\": \"prevents or reduces\",\n      \"range\": \"exposure_and_transmission\"\
-  \n    },\n    \"sampled_from\": {\n      \"description\": \"A specimen is collected\
-  \ from a host.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"source_of_specimen\"\
-  ,\n      \"label\": \"sampled from\",\n      \"range\": \"host\"\n    },\n    \"\
-  spills_over_from\": {\n      \"description\": \"A pathogen moves from an animal\
-  \ host or animal-associated source into humans.\",\n      \"domain\": \"pathogen\"\
-  ,\n      \"inverse\": \"source_of_zoonotic_spillover\",\n      \"label\": \"spills\
-  \ over from\",\n      \"range\": \"animal_host\"\n    },\n    \"subtype_of\": {\n\
-  \      \"description\": \"A taxonomic or ontology concept is a more specific type\
-  \ of another concept.\",\n      \"domain\": \"pathogen_entity\",\n      \"inverse\"\
-  : \"has_subtype\",\n      \"label\": \"subtype of\",\n      \"range\": \"pathogen_entity\"\
-  \n    },\n    \"supports\": {\n      \"description\": \"An observation, result,\
-  \ or sequence analysis provides evidence for a spillover interpretation.\",\n  \
-  \    \"domain\": \"investigation_entity\",\n      \"inverse\": \"supported_by\"\
-  ,\n      \"label\": \"supports\",\n      \"range\": \"zoonotic_spillover\"\n   \
-  \ },\n    \"tested_by\": {\n      \"description\": \"A specimen is processed using\
-  \ a laboratory assay.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"\
-  tests\",\n      \"label\": \"tested by\",\n      \"range\": \"assay\"\n    },\n\
-  \    \"transmitted_by\": {\n      \"description\": \"A pathogen uses a specified\
-  \ transmission route.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
-  transmits_pathogen\",\n      \"label\": \"transmitted by\",\n      \"range\": \"\
-  transmission_route\"\n    },\n    \"transmitted_to\": {\n      \"description\":\
-  \ \"A pathogen is transmitted to a recipient host.\",\n      \"domain\": \"pathogen\"\
-  ,\n      \"inverse\": \"acquires_from\",\n      \"label\": \"transmitted to\",\n\
-  \      \"range\": \"host\"\n    },\n    \"yields_result\": {\n      \"description\"\
-  : \"An assay produces an observed test result.\",\n      \"domain\": \"assay\",\n\
-  \      \"inverse\": \"result_of\",\n      \"label\": \"yields result\",\n      \"\
-  range\": \"test_result\"\n    }\n  }\n}"
+  \    \"examines_feature\": {\n      \"description\": \"An investigation, study,\
+  \ or analysis examines a biological feature.\",\n      \"domain\": \"investigation_entity\"\
+  ,\n      \"inverse\": \"feature_examined_by\",\n      \"label\": \"examines feature\"\
+  ,\n      \"range\": \"biological_feature\"\n    },\n    \"exposes\": {\n      \"\
+  description\": \"A material or source creates an exposure opportunity for a host.\"\
+  ,\n      \"domain\": \"contaminated_material\",\n      \"inverse\": \"exposed_to\"\
+  ,\n      \"label\": \"exposes\",\n      \"range\": \"host\"\n    },\n    \"has_symptom\"\
+  : {\n      \"description\": \"A host exhibits a symptom or clinical sign.\",\n \
+  \     \"domain\": \"host\",\n      \"inverse\": \"symptom_of\",\n      \"label\"\
+  : \"has symptom or sign\",\n      \"range\": \"symptom_or_sign\"\n    },\n    \"\
+  infects\": {\n      \"description\": \"A pathogen is detected in or associated with\
+  \ infection of a host.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
+  infected_by\",\n      \"label\": \"infects\",\n      \"range\": \"host\"\n    },\n\
+  \    \"maintained_in\": {\n      \"description\": \"A pathogen is maintained in\
+  \ a reservoir host population.\",\n      \"domain\": \"pathogen\",\n      \"inverse\"\
+  : \"maintains_pathogen\",\n      \"label\": \"maintained in\",\n      \"range\"\
+  : \"reservoir_host\"\n    },\n    \"occurred_during\": {\n      \"description\"\
+  : \"An outbreak, exposure, or case occurred during a temporal interval.\",\n   \
+  \   \"domain\": \"outbreak\",\n      \"inverse\": \"time_of_outbreak\",\n      \"\
+  label\": \"occurred during\",\n      \"range\": \"time_period\"\n    },\n    \"\
+  occurred_in\": {\n      \"description\": \"An outbreak or case cluster occurred\
+  \ in a location.\",\n      \"domain\": \"outbreak\",\n      \"inverse\": \"location_of_outbreak\"\
+  ,\n      \"label\": \"occurred in\",\n      \"range\": \"geographic_location\"\n\
+  \    },\n    \"presents_with\": {\n      \"description\": \"A case has a documented\
+  \ clinical syndrome.\",\n      \"domain\": \"case\",\n      \"inverse\": \"presentation_of\"\
+  ,\n      \"label\": \"presents with\",\n      \"range\": \"clinical_syndrome\"\n\
+  \    },\n    \"prevents\": {\n      \"description\": \"An intervention is intended\
+  \ to prevent or reduce an exposure or transmission event.\",\n      \"domain\":\
+  \ \"intervention\",\n      \"inverse\": \"reduced_by\",\n      \"label\": \"prevents\
+  \ or reduces\",\n      \"range\": \"exposure_and_transmission\"\n    },\n    \"\
+  sampled_from\": {\n      \"description\": \"A specimen is collected from a host.\"\
+  ,\n      \"domain\": \"specimen\",\n      \"inverse\": \"source_of_specimen\",\n\
+  \      \"label\": \"sampled from\",\n      \"range\": \"host\"\n    },\n    \"spills_over_from\"\
+  : {\n      \"description\": \"A pathogen moves from an animal host or animal-associated\
+  \ source into humans.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
+  source_of_zoonotic_spillover\",\n      \"label\": \"spills over from\",\n      \"\
+  range\": \"animal_host\"\n    },\n    \"subtype_of\": {\n      \"description\":\
+  \ \"A taxonomic or ontology concept is a more specific type of another concept.\"\
+  ,\n      \"domain\": \"pathogen_entity\",\n      \"inverse\": \"has_subtype\",\n\
+  \      \"label\": \"subtype of\",\n      \"range\": \"pathogen_entity\"\n    },\n\
+  \    \"supports\": {\n      \"description\": \"An observation, result, or sequence\
+  \ analysis provides evidence for a spillover interpretation.\",\n      \"domain\"\
+  : \"investigation_entity\",\n      \"inverse\": \"supported_by\",\n      \"label\"\
+  : \"supports\",\n      \"range\": \"zoonotic_spillover\"\n    },\n    \"tested_by\"\
+  : {\n      \"description\": \"A specimen is processed using a laboratory assay.\"\
+  ,\n      \"domain\": \"specimen\",\n      \"inverse\": \"tests\",\n      \"label\"\
+  : \"tested by\",\n      \"range\": \"assay\"\n    },\n    \"transmitted_by\": {\n\
+  \      \"description\": \"A pathogen uses a specified transmission route.\",\n \
+  \     \"domain\": \"pathogen\",\n      \"inverse\": \"transmits_pathogen\",\n  \
+  \    \"label\": \"transmitted by\",\n      \"range\": \"transmission_route\"\n \
+  \   },\n    \"transmitted_to\": {\n      \"description\": \"A pathogen is transmitted\
+  \ to a recipient host.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
+  acquires_from\",\n      \"label\": \"transmitted to\",\n      \"range\": \"host\"\
+  \n    },\n    \"yields_result\": {\n      \"description\": \"An assay produces an\
+  \ observed test result.\",\n      \"domain\": \"assay\",\n      \"inverse\": \"\
+  result_of\",\n      \"label\": \"yields result\",\n      \"range\": \"test_result\"\
+  \n    }\n  }\n}"
 rendered: true
 render_context:
   template_name: subgraph-narrator
