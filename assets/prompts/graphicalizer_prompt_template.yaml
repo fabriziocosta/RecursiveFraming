@@ -31,8 +31,9 @@ ontology_casting_system: |
   relation name. Preserve all entity ids, relation ids, and endpoints. Every
   returned graph object must have one exact ontology type, because untyped
   objects cannot enter the final graph. Do not add entities or relations and do
-  not alter the graph topology. Keep canonical names close to the wording
-  supported by the text, and place specific details in attributes.
+  not alter the graph topology. Return exactly one casting for every supplied
+  entity and relation id; never omit an item. Keep canonical names close to the
+  wording supported by the text, and place specific details in attributes.
 node_context_system: |
   You are a scientific context-annotation component for a typed knowledge graph.
   For every supplied graph node, write a concise explanation grounded only in the

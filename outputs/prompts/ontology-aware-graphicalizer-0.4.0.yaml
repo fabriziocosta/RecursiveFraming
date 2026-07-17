@@ -49,71 +49,73 @@ ontology_casting_system: "You are an ontology-mapping component for a typed know
   \ name. Preserve all entity ids, relation ids, and endpoints. Every\nreturned graph\
   \ object must have one exact ontology type, because untyped\nobjects cannot enter\
   \ the final graph. Do not add entities or relations and do\nnot alter the graph\
-  \ topology. Keep canonical names close to the wording\nsupported by the text, and\
-  \ place specific details in attributes.\n\n\nRUNTIME EXTRACTION DENSITY REFERENCE\n\
-  The first pass was configured with these approximate targets. Do not add or remove\
-  \ graph objects during casting:\n{\n  \"entities_per_word\": 0.1,\n  \"relations_per_entity\"\
-  : 1.5\n}\n\nTARGET ONTOLOGY\nUse only the exact dictionary keys under entity_types\
-  \ and relation_types as ontology_type values. Never use a label, synonym, inverse\
-  \ value, description, or free-form relation name as an ontology_type. Every non-null\
-  \ type must match one of those keys exactly:\n{\n  \"entity_types\": {\n    \"animal_host\"\
-  : {\n      \"attributes\": [\n        \"species\",\n        \"common_name\",\n \
-  \       \"life_stage\",\n        \"sex\",\n        \"domestic_status\"\n      ],\n\
-  \      \"description\": \"A non-human animal considered in relation to infection,\
-  \ carriage, exposure, or transmission.\",\n      \"label\": \"Animal host\",\n \
-  \     \"parent\": \"host\",\n      \"synonyms\": [\n        \"animal\",\n      \
-  \  \"non-human host\"\n      ]\n    },\n    \"animal_population\": {\n      \"attributes\"\
-  : [\n        \"species\",\n        \"population_name\",\n        \"location\",\n\
-  \        \"size\"\n      ],\n      \"description\": \"A geographically or biologically\
-  \ defined group of non-human animals.\",\n      \"label\": \"Animal population\"\
-  ,\n      \"parent\": \"biological_host\",\n      \"synonyms\": [\n        \"wildlife\
-  \ population\",\n        \"livestock population\",\n        \"animal group\"\n \
-  \     ]\n    },\n    \"assay\": {\n      \"attributes\": [\n        \"assay_name\"\
-  ,\n        \"target\",\n        \"platform\",\n        \"sensitivity\",\n      \
-  \  \"specificity\"\n      ],\n      \"description\": \"A laboratory procedure used\
-  \ to detect, identify, quantify, or characterize a pathogen or immune response.\"\
-  ,\n      \"examples\": [\n        \"reverse-transcription polymerase chain reaction\"\
-  ,\n        \"enzyme-linked immunosorbent assay\"\n      ],\n      \"label\": \"\
-  Laboratory assay\",\n      \"parent\": \"investigation_entity\",\n      \"synonyms\"\
-  : [\n        \"test\",\n        \"laboratory test\",\n        \"diagnostic assay\"\
-  \n      ]\n    },\n    \"bacterial_pathogen\": {\n      \"attributes\": [\n    \
-  \    \"canonical_name\",\n        \"species\",\n        \"strain\",\n        \"\
-  serotype\",\n        \"resistance_profile\"\n      ],\n      \"description\": \"\
-  A bacterium associated with infection or disease.\",\n      \"examples\": [\n  \
-  \      \"Bacillus anthracis\",\n        \"Escherichia coli\"\n      ],\n      \"\
-  label\": \"Bacterial pathogen\",\n      \"parent\": \"pathogen\",\n      \"synonyms\"\
-  : [\n        \"bacterium\",\n        \"bacterial agent\"\n      ]\n    },\n    \"\
-  biological_host\": {\n      \"abstract\": false,\n      \"description\": \"An organism\
-  \ or host population that carries, acquires, or transmits a pathogen.\",\n     \
-  \ \"label\": \"Biological host\"\n    },\n    \"case\": {\n      \"attributes\"\
-  : [\n        \"case_status\",\n        \"confirmation_method\",\n        \"onset_date\"\
-  ,\n        \"outcome\"\n      ],\n      \"description\": \"An individual occurrence\
-  \ of disease or infection meeting a stated clinical or laboratory definition.\"\
-  ,\n      \"label\": \"Human case\",\n      \"parent\": \"investigation_entity\"\
-  ,\n      \"synonyms\": [\n        \"patient case\",\n        \"confirmed case\"\
-  ,\n        \"suspected case\"\n      ]\n    },\n    \"clinical_entity\": {\n   \
-  \   \"abstract\": false,\n      \"description\": \"A disease, clinical presentation,\
-  \ symptom, sign, or biological state observed in a patient.\",\n      \"label\"\
-  : \"Clinical entity\"\n    },\n    \"clinical_syndrome\": {\n      \"attributes\"\
-  : [\n        \"syndrome_name\",\n        \"severity\",\n        \"onset\",\n   \
-  \     \"duration\"\n      ],\n      \"description\": \"A recognizable combination\
-  \ of clinical findings associated with a disease or infection.\",\n      \"examples\"\
-  : [\n        \"acute febrile encephalitis\"\n      ],\n      \"label\": \"Clinical\
-  \ syndrome\",\n      \"parent\": \"clinical_entity\",\n      \"synonyms\": [\n \
-  \       \"syndrome\",\n        \"clinical presentation\"\n      ]\n    },\n    \"\
-  collection_site\": {\n      \"attributes\": [\n        \"site_name\",\n        \"\
-  site_type\",\n        \"latitude\",\n        \"longitude\"\n      ],\n      \"description\"\
-  : \"A location where a specimen, environmental sample, or animal sample is collected.\"\
-  ,\n      \"label\": \"Collection site\",\n      \"parent\": \"geographic_location\"\
-  ,\n      \"synonyms\": [\n        \"sampling site\",\n        \"field site\",\n\
-  \        \"study site\"\n      ]\n    },\n    \"contaminated_material\": {\n   \
-  \   \"attributes\": [\n        \"material_type\",\n        \"contamination_status\"\
-  ,\n        \"collection_site\"\n      ],\n      \"description\": \"A non-host material\
-  \ containing or suspected to contain a pathogen.\",\n      \"examples\": [\n   \
-  \     \"raw date-palm sap\",\n        \"residual sap\",\n        \"protective covering\"\
-  \n      ],\n      \"label\": \"Contaminated material\",\n      \"parent\": \"exposure_and_transmission\"\
-  ,\n      \"synonyms\": [\n        \"contaminated food\",\n        \"contaminated\
-  \ environmental material\",\n        \"vehicle\"\n      ]\n    },\n    \"epidemiological_measure\"\
+  \ topology. Return exactly one casting for every supplied\nentity and relation id;\
+  \ never omit an item. Keep canonical names close to the\nwording supported by the\
+  \ text, and place specific details in attributes.\n\n\nRUNTIME EXTRACTION DENSITY\
+  \ REFERENCE\nThe first pass was configured with these approximate targets. Do not\
+  \ add or remove graph objects during casting:\n{\n  \"entities_per_word\": 0.1,\n\
+  \  \"relations_per_entity\": 1.5\n}\n\nTARGET ONTOLOGY\nUse only the exact dictionary\
+  \ keys under entity_types and relation_types as ontology_type values. Never use\
+  \ a label, synonym, inverse value, description, or free-form relation name as an\
+  \ ontology_type. Every non-null type must match one of those keys exactly:\n{\n\
+  \  \"entity_types\": {\n    \"animal_host\": {\n      \"attributes\": [\n      \
+  \  \"species\",\n        \"common_name\",\n        \"life_stage\",\n        \"sex\"\
+  ,\n        \"domestic_status\"\n      ],\n      \"description\": \"A non-human animal\
+  \ considered in relation to infection, carriage, exposure, or transmission.\",\n\
+  \      \"label\": \"Animal host\",\n      \"parent\": \"host\",\n      \"synonyms\"\
+  : [\n        \"animal\",\n        \"non-human host\"\n      ]\n    },\n    \"animal_population\"\
+  : {\n      \"attributes\": [\n        \"species\",\n        \"population_name\"\
+  ,\n        \"location\",\n        \"size\"\n      ],\n      \"description\": \"\
+  A geographically or biologically defined group of non-human animals.\",\n      \"\
+  label\": \"Animal population\",\n      \"parent\": \"biological_host\",\n      \"\
+  synonyms\": [\n        \"wildlife population\",\n        \"livestock population\"\
+  ,\n        \"animal group\"\n      ]\n    },\n    \"assay\": {\n      \"attributes\"\
+  : [\n        \"assay_name\",\n        \"target\",\n        \"platform\",\n     \
+  \   \"sensitivity\",\n        \"specificity\"\n      ],\n      \"description\":\
+  \ \"A laboratory procedure used to detect, identify, quantify, or characterize a\
+  \ pathogen or immune response.\",\n      \"examples\": [\n        \"reverse-transcription\
+  \ polymerase chain reaction\",\n        \"enzyme-linked immunosorbent assay\"\n\
+  \      ],\n      \"label\": \"Laboratory assay\",\n      \"parent\": \"investigation_entity\"\
+  ,\n      \"synonyms\": [\n        \"test\",\n        \"laboratory test\",\n    \
+  \    \"diagnostic assay\"\n      ]\n    },\n    \"bacterial_pathogen\": {\n    \
+  \  \"attributes\": [\n        \"canonical_name\",\n        \"species\",\n      \
+  \  \"strain\",\n        \"serotype\",\n        \"resistance_profile\"\n      ],\n\
+  \      \"description\": \"A bacterium associated with infection or disease.\",\n\
+  \      \"examples\": [\n        \"Bacillus anthracis\",\n        \"Escherichia coli\"\
+  \n      ],\n      \"label\": \"Bacterial pathogen\",\n      \"parent\": \"pathogen\"\
+  ,\n      \"synonyms\": [\n        \"bacterium\",\n        \"bacterial agent\"\n\
+  \      ]\n    },\n    \"biological_host\": {\n      \"abstract\": false,\n     \
+  \ \"description\": \"An organism or host population that carries, acquires, or transmits\
+  \ a pathogen.\",\n      \"label\": \"Biological host\"\n    },\n    \"case\": {\n\
+  \      \"attributes\": [\n        \"case_status\",\n        \"confirmation_method\"\
+  ,\n        \"onset_date\",\n        \"outcome\"\n      ],\n      \"description\"\
+  : \"An individual occurrence of disease or infection meeting a stated clinical or\
+  \ laboratory definition.\",\n      \"label\": \"Human case\",\n      \"parent\"\
+  : \"investigation_entity\",\n      \"synonyms\": [\n        \"patient case\",\n\
+  \        \"confirmed case\",\n        \"suspected case\"\n      ]\n    },\n    \"\
+  clinical_entity\": {\n      \"abstract\": false,\n      \"description\": \"A disease,\
+  \ clinical presentation, symptom, sign, or biological state observed in a patient.\"\
+  ,\n      \"label\": \"Clinical entity\"\n    },\n    \"clinical_syndrome\": {\n\
+  \      \"attributes\": [\n        \"syndrome_name\",\n        \"severity\",\n  \
+  \      \"onset\",\n        \"duration\"\n      ],\n      \"description\": \"A recognizable\
+  \ combination of clinical findings associated with a disease or infection.\",\n\
+  \      \"examples\": [\n        \"acute febrile encephalitis\"\n      ],\n     \
+  \ \"label\": \"Clinical syndrome\",\n      \"parent\": \"clinical_entity\",\n  \
+  \    \"synonyms\": [\n        \"syndrome\",\n        \"clinical presentation\"\n\
+  \      ]\n    },\n    \"collection_site\": {\n      \"attributes\": [\n        \"\
+  site_name\",\n        \"site_type\",\n        \"latitude\",\n        \"longitude\"\
+  \n      ],\n      \"description\": \"A location where a specimen, environmental\
+  \ sample, or animal sample is collected.\",\n      \"label\": \"Collection site\"\
+  ,\n      \"parent\": \"geographic_location\",\n      \"synonyms\": [\n        \"\
+  sampling site\",\n        \"field site\",\n        \"study site\"\n      ]\n   \
+  \ },\n    \"contaminated_material\": {\n      \"attributes\": [\n        \"material_type\"\
+  ,\n        \"contamination_status\",\n        \"collection_site\"\n      ],\n  \
+  \    \"description\": \"A non-host material containing or suspected to contain a\
+  \ pathogen.\",\n      \"examples\": [\n        \"raw date-palm sap\",\n        \"\
+  residual sap\",\n        \"protective covering\"\n      ],\n      \"label\": \"\
+  Contaminated material\",\n      \"parent\": \"exposure_and_transmission\",\n   \
+  \   \"synonyms\": [\n        \"contaminated food\",\n        \"contaminated environmental\
+  \ material\",\n        \"vehicle\"\n      ]\n    },\n    \"epidemiological_measure\"\
   : {\n      \"attributes\": [\n        \"measure_name\",\n        \"value\",\n  \
   \      \"confidence_interval\",\n        \"p_value\",\n        \"adjustment_set\"\
   \n      ],\n      \"description\": \"A quantitative estimate describing infection\
@@ -825,4 +827,4 @@ render_context:
     max_evidence_items: 2
     include_evidence: true
     include_uncertainty: true
-  model: gpt-5-nano
+  model: gpt-4o-mini

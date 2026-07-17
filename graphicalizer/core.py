@@ -1138,7 +1138,7 @@ class GraphicalizerConfig:
     prompt_snapshot_path: Optional[str | Path] = None
     disconnected_policy: str = "largest_component"
     context_policy: str = "all_nodes"
-    casting_retries: int = 1
+    casting_retries: int = 2
     strict_validation: bool = False
     max_density: float = 0.40
     max_degree_fraction: float = 0.50
@@ -1200,7 +1200,7 @@ class GraphicalizerConfig:
                 data.get("disconnected_policy", "largest_component")
             ),
             context_policy=str(data.get("context_policy", "all_nodes")),
-            casting_retries=int(data.get("casting_retries", 1)),
+            casting_retries=int(data.get("casting_retries", 2)),
             strict_validation=bool(data.get("strict_validation", False)),
             max_density=float(data.get("max_density", 0.40)),
             max_degree_fraction=float(data.get("max_degree_fraction", 0.50)),
@@ -1227,7 +1227,7 @@ class OpenAIResponsesClient:
         client: Any = None,
         prompt_snapshot_path: Optional[str | Path] = None,
         node_context_config: Optional[NodeContextConfig] = None,
-        casting_retries: int = 1,
+        casting_retries: int = 2,
         options: Optional[Mapping[str, Any]] = None,
     ) -> None:
         self.ontology = ontology
@@ -1480,6 +1480,12 @@ class OpenAIResponsesClient:
                 "previous_casting": casting.to_dict(),
                 "validation_issues": issues,
                 "repair_attempt": attempt + 1,
+                "required_entity_ids": [
+                    entity.entity_id for entity in extraction.entities
+                ],
+                "required_relation_ids": [
+                    relation.relation_id for relation in extraction.relations
+                ],
             }
             repair_system = (
                 f"{self.prompt.ontology_casting_system}\n\n"
@@ -1489,7 +1495,10 @@ class OpenAIResponsesClient:
                 "all listed issues. Use only exact keys from ontology.entity_types "
                 "and ontology.relation_types; never use inverse values or free-form "
                 "labels. Do not return null ontology types because every graph "
-                "object must be ontology-labeled.\n"
+                "object must be ontology-labeled. Return exactly one entity casting "
+                "for every required_entity_id and exactly one relation casting for "
+                "every required_relation_id; do not omit an item even if its type "
+                "is uncertain.\n"
                 f"Validation issues: {json.dumps(issues, ensure_ascii=False)}"
             )
             response = self._parse_response(
@@ -2223,7 +2232,7 @@ class OllamaStructuredClient(OpenAIResponsesClient):
         client: Any = None,
         prompt_snapshot_path: Optional[str | Path] = None,
         node_context_config: Optional[NodeContextConfig] = None,
-        casting_retries: int = 1,
+        casting_retries: int = 2,
         host: Optional[str] = None,
         options: Optional[Mapping[str, Any]] = None,
     ) -> None:
