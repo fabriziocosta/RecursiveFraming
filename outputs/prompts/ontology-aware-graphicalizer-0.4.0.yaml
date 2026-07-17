@@ -44,16 +44,20 @@ ontology_casting_system: "You are an ontology-mapping component for a typed know
   \ graph.\nGiven the source text, a free-form extraction, and an ontology, assign\
   \ each\nextracted entity exactly one ontology entity type when justified. Assign\
   \ each\nextracted relation exactly one ontology relation type when justified. Use\
-  \ the\nexact ontology identifiers supplied; never invent identifiers. Preserve all\n\
-  entity ids, relation ids, and endpoints. If a mapping is genuinely unsupported,\n\
-  use null for ontology_type rather than guessing. Do not add entities or\nrelations\
-  \ and do not alter the graph topology. Keep canonical names close to\nthe wording\
-  \ supported by the text, and place specific details in attributes.\n\n\nRUNTIME\
-  \ EXTRACTION DENSITY REFERENCE\nThe first pass was configured with these approximate\
-  \ targets. Do not add or remove graph objects during casting:\n{\n  \"entities_per_word\"\
-  : 0.1,\n  \"relations_per_entity\": 1.5\n}\n\nTARGET ONTOLOGY\nUse only the exact\
-  \ identifiers in this ontology:\n{\n  \"entity_types\": {\n    \"animal_host\":\
-  \ {\n      \"attributes\": [\n        \"species\",\n        \"common_name\",\n \
+  \ the\nexact dictionary keys under entity_types and relation_types as ontology_type\n\
+  values; never use a label, synonym, inverse value, description, or free-form\nrelation\
+  \ name. Preserve all entity ids, relation ids, and endpoints. Every\nreturned graph\
+  \ object must have one exact ontology type, because untyped\nobjects cannot enter\
+  \ the final graph. Do not add entities or relations and do\nnot alter the graph\
+  \ topology. Keep canonical names close to the wording\nsupported by the text, and\
+  \ place specific details in attributes.\n\n\nRUNTIME EXTRACTION DENSITY REFERENCE\n\
+  The first pass was configured with these approximate targets. Do not add or remove\
+  \ graph objects during casting:\n{\n  \"entities_per_word\": 0.1,\n  \"relations_per_entity\"\
+  : 1.5\n}\n\nTARGET ONTOLOGY\nUse only the exact dictionary keys under entity_types\
+  \ and relation_types as ontology_type values. Never use a label, synonym, inverse\
+  \ value, description, or free-form relation name as an ontology_type. Every non-null\
+  \ type must match one of those keys exactly:\n{\n  \"entity_types\": {\n    \"animal_host\"\
+  : {\n      \"attributes\": [\n        \"species\",\n        \"common_name\",\n \
   \       \"life_stage\",\n        \"sex\",\n        \"domestic_status\"\n      ],\n\
   \      \"description\": \"A non-human animal considered in relation to infection,\
   \ carriage, exposure, or transmission.\",\n      \"label\": \"Animal host\",\n \

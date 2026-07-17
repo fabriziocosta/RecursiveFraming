@@ -8,9 +8,10 @@ The module implements a three-pass workflow:
 4. Generate grounded explanatory context for each final graph node.
 5. Attach the ontology assignments and context to the validated graph.
 
-The OpenAI dependency is isolated in :class:`OpenAIResponsesClient`. The
-graph builder, ontology loader, validator, and orchestration layer can be used
-with a fake client in tests without making an API call.
+Provider-specific code is isolated in small structured-output adapters. The
+graph builder, ontology loader, validator, and orchestration layer depend only
+on :class:`StructuredLLMClient` and can be used with a fake client in tests
+without making an API call.
 
 Runtime dependencies for the OpenAI client are ``openai``, ``pydantic``,
 ``networkx``, and ``PyYAML``. Graph rendering uses the Graphviz ``dot``
@@ -28,12 +29,14 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+from types import SimpleNamespace
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, Tuple
 
 
 # Cheap, fast default for early extraction experiments. Override explicitly
 # when a higher-capability model is needed.
 DEFAULT_MODEL = "gpt-4o-mini"
+DEFAULT_OLLAMA_MODEL = "llama3.2"
 
 
 class GraphicalizerError(RuntimeError):
@@ -944,7 +947,10 @@ class GraphicalizerPrompt:
             "Do not add or remove graph objects during casting:\n"
             f"{density_context}\n\n"
             "TARGET ONTOLOGY\n"
-            "Use only the exact identifiers in this ontology:\n"
+            "Use only the exact dictionary keys under entity_types and relation_types "
+            "as ontology_type values. Never use a label, synonym, inverse value, "
+            "description, or free-form relation name as an ontology_type. Every "
+            "non-null type must match one of those keys exactly:\n"
             f"{ontology_context}"
         )
         node_context_prompt = (
@@ -1122,6 +1128,7 @@ class ExtractionDensityConfig:
 class GraphicalizerConfig:
     """Single public configuration for the complete graphicalizer pipeline."""
 
+    provider: str = "openai"
     model: str = DEFAULT_MODEL
     extraction_density: ExtractionDensityConfig = field(
         default_factory=ExtractionDensityConfig
@@ -1131,12 +1138,15 @@ class GraphicalizerConfig:
     prompt_snapshot_path: Optional[str | Path] = None
     disconnected_policy: str = "largest_component"
     context_policy: str = "all_nodes"
+    casting_retries: int = 1
     strict_validation: bool = False
     max_density: float = 0.40
     max_degree_fraction: float = 0.50
     max_hub_nodes: int = 0
 
     def __post_init__(self) -> None:
+        if self.provider not in {"openai", "ollama"}:
+            raise ValueError("provider must be either 'openai' or 'ollama'.")
         if not self.model.strip():
             raise ValueError("model must not be empty.")
         if self.disconnected_policy not in {"largest_component", "raise", "preserve"}:
@@ -1145,9 +1155,12 @@ class GraphicalizerConfig:
             )
         if self.context_policy not in {"all_nodes", "disabled"}:
             raise ValueError("context_policy must be either 'all_nodes' or 'disabled'.")
+        if self.casting_retries < 0:
+            raise ValueError("casting_retries must be non-negative.")
 
     def to_mapping(self) -> Dict[str, Any]:
         return {
+            "provider": self.provider,
             "model": self.model,
             "extraction_density": self.extraction_density.to_mapping(),
             "node_context": self.node_context.to_mapping(),
@@ -1163,6 +1176,7 @@ class GraphicalizerConfig:
             ),
             "disconnected_policy": self.disconnected_policy,
             "context_policy": self.context_policy,
+            "casting_retries": self.casting_retries,
             "strict_validation": self.strict_validation,
             "max_density": self.max_density,
             "max_degree_fraction": self.max_degree_fraction,
@@ -1172,6 +1186,7 @@ class GraphicalizerConfig:
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> "GraphicalizerConfig":
         return cls(
+            provider=str(data.get("provider", "openai")),
             model=str(data.get("model", DEFAULT_MODEL)),
             extraction_density=ExtractionDensityConfig.from_mapping(
                 data.get("extraction_density", {})
@@ -1185,6 +1200,7 @@ class GraphicalizerConfig:
                 data.get("disconnected_policy", "largest_component")
             ),
             context_policy=str(data.get("context_policy", "all_nodes")),
+            casting_retries=int(data.get("casting_retries", 1)),
             strict_validation=bool(data.get("strict_validation", False)),
             max_density=float(data.get("max_density", 0.40)),
             max_degree_fraction=float(data.get("max_degree_fraction", 0.50)),
@@ -1200,6 +1216,8 @@ class OpenAIResponsesClient:
     already-configured client is injected.
     """
 
+    provider = "openai"
+
     def __init__(
         self,
         prompt: GraphicalizerPrompt,
@@ -1209,10 +1227,14 @@ class OpenAIResponsesClient:
         client: Any = None,
         prompt_snapshot_path: Optional[str | Path] = None,
         node_context_config: Optional[NodeContextConfig] = None,
+        casting_retries: int = 1,
     ) -> None:
         self.ontology = ontology
         self.extraction_density = extraction_density or ExtractionDensityConfig()
         self.node_context_config = node_context_config or NodeContextConfig()
+        if casting_retries < 0:
+            raise ValueError("casting_retries must be non-negative.")
+        self.casting_retries = casting_retries
         self.prompt_template = prompt
         self.model = model
         self.prompt = (
@@ -1341,6 +1363,39 @@ class OpenAIResponsesClient:
             raise LLMResponseError("OpenAI returned no parsed structured output.")
         return parsed
 
+    @staticmethod
+    def _ontology_casting_from_parsed(parsed: Any) -> OntologyCasting:
+        return OntologyCasting(
+            entities=tuple(
+                OntologyEntity(
+                    entity_id=item.id,
+                    ontology_type=item.ontology_type,
+                    canonical_name=item.canonical_name or "",
+                    attributes={
+                        attribute.key: attribute.value
+                        for attribute in item.attributes
+                    },
+                    confidence=item.confidence,
+                )
+                for item in parsed.entities
+            ),
+            relations=tuple(
+                OntologyRelation(
+                    relation_id=item.id,
+                    source_id=item.source_id,
+                    target_id=item.target_id,
+                    ontology_type=item.ontology_type,
+                    attributes={
+                        attribute.key: attribute.value
+                        for attribute in item.attributes
+                    },
+                    confidence=item.confidence,
+                )
+                for item in parsed.relations
+            ),
+            notes=parsed.notes or "",
+        )
+
     def extract_free_graph(self, text: str) -> FreeGraphExtraction:
         extraction_request = self.extraction_density.request_payload(text)
         response = self.client.responses.parse(
@@ -1404,31 +1459,53 @@ class OpenAIResponsesClient:
             ],
             text_format=self._casting_schema,
         )
-        parsed = self._parsed(response)
-        return OntologyCasting(
-            entities=tuple(
-                OntologyEntity(
-                    entity_id=item.id,
-                    ontology_type=item.ontology_type,
-                    canonical_name=item.canonical_name or "",
-                    attributes={attribute.key: attribute.value for attribute in item.attributes},
-                    confidence=item.confidence,
-                )
-                for item in parsed.entities
-            ),
-            relations=tuple(
-                OntologyRelation(
-                    relation_id=item.id,
-                    source_id=item.source_id,
-                    target_id=item.target_id,
-                    ontology_type=item.ontology_type,
-                    attributes={attribute.key: attribute.value for attribute in item.attributes},
-                    confidence=item.confidence,
-                )
-                for item in parsed.relations
-            ),
-            notes=parsed.notes or "",
+        casting = self._ontology_casting_from_parsed(self._parsed(response))
+        issues = validate_ontology_casting(
+            extraction,
+            casting,
+            ontology,
+            require_types=True,
         )
+
+        for attempt in range(self.casting_retries):
+            if not issues:
+                break
+            repair_payload = {
+                **payload,
+                "previous_casting": casting.to_dict(),
+                "validation_issues": issues,
+                "repair_attempt": attempt + 1,
+            }
+            repair_system = (
+                f"{self.prompt.ontology_casting_system}\n\n"
+                "CASTING REPAIR\n"
+                "The previous casting violated the ontology contract. Return a "
+                "complete replacement, preserving every id and endpoint. Correct "
+                "all listed issues. Use only exact keys from ontology.entity_types "
+                "and ontology.relation_types; never use inverse values or free-form "
+                "labels. Do not return null ontology types because every graph "
+                "object must be ontology-labeled.\n"
+                f"Validation issues: {json.dumps(issues, ensure_ascii=False)}"
+            )
+            response = self.client.responses.parse(
+                model=self.model,
+                input=[
+                    {"role": "system", "content": repair_system},
+                    {
+                        "role": "user",
+                        "content": json.dumps(repair_payload, ensure_ascii=False),
+                    },
+                ],
+                text_format=self._casting_schema,
+            )
+            casting = self._ontology_casting_from_parsed(self._parsed(response))
+            issues = validate_ontology_casting(
+                extraction,
+                casting,
+                ontology,
+                require_types=True,
+            )
+        return casting
 
     def enrich_node_contexts(
         self,
@@ -1525,8 +1602,110 @@ class LLMGraphicalizer:
     relations between them.
     """
 
++    @classmethod
+    def from_llm_client(
+        cls,
+        ontology: Ontology,
+        llm_client: StructuredLLMClient,
+        config: Optional[GraphicalizerConfig] = None,
+    ) -> "LLMGraphicalizer":
+        """Build the orchestrator around any StructuredLLMClient implementation."""
+        settings = config or GraphicalizerConfig()
+        return cls(
+            llm_client=llm_client,
+            ontology=ontology,
+            validator=GraphValidator(
+                max_density=settings.max_density,
+                max_degree_fraction=settings.max_degree_fraction,
+                max_hub_nodes=settings.max_hub_nodes,
+            ),
+            strict_validation=settings.strict_validation,
+            disconnected_policy=settings.disconnected_policy,
+            node_context_config=settings.node_context,
+            context_policy=settings.context_policy,
+        )
+
+    @classmethod
+    def from_provider(
+        cls,
+        ontology: Ontology,
+        config: Optional[GraphicalizerConfig] = None,
+        *,
+        provider: Optional[str] = None,
+        client: Any = None,
+        host: Optional[str] = None,
+        options: Optional[Mapping[str, Any]] = None,
+        prompt_template: Optional[GraphicalizerPrompt] = None,
+    ) -> "LLMGraphicalizer":
+        """Construct the graphicalizer using the selected LLM provider."""
+        selected_provider = provider or (config.provider if config is not None else "openai")
+        settings = config or (
+            GraphicalizerConfig(provider="ollama", model=DEFAULT_OLLAMA_MODEL)
+            if selected_provider == "ollama"
+            else GraphicalizerConfig()
+        )
+        if selected_provider == "openai":
+            return cls.from_openai(
+                ontology,
+                settings,
+                client=client,
+                prompt_template=prompt_template,
+            )
+        if selected_provider == "ollama":
+            return cls.from_ollama(
+                ontology,
+                settings,
+                client=client,
+                host=host,
+                options=options,
+                prompt_template=prompt_template,
+            )
+        raise ValueError(
+            "Unsupported LLM provider "
+            f"{selected_provider!r}; choose 'openai' or 'ollama'."
+        )
+
+    @classmethod
+    def from_ollama(
+        cls,
+        ontology: Ontology,
+        config: Optional[GraphicalizerConfig] = None,
+        *,
+        client: Any = None,
+        host: Optional[str] = None,
+        options: Optional[Mapping[str, Any]] = None,
+        prompt_template: Optional[GraphicalizerPrompt] = None,
+    ) -> "LLMGraphicalizer":
+        """Build the pipeline against a local Ollama chat server."""
+        settings = config or GraphicalizerConfig(
+            provider="ollama",
+            model=DEFAULT_OLLAMA_MODEL,
+        )
+        if prompt_template is not None:
+            template = prompt_template
+        elif settings.prompt_template_path is not None:
+            template = GraphicalizerPrompt.from_yaml_file(
+                settings.prompt_template_path
+            )
+        else:
+            template = GraphicalizerPrompt.default()
+        llm_client = OllamaStructuredClient(
+            prompt=template,
+            ontology=ontology,
+            extraction_density=settings.extraction_density,
+            model=settings.model,
+            client=client,
+            prompt_snapshot_path=settings.prompt_snapshot_path,
+            node_context_config=settings.node_context,
+            casting_retries=settings.casting_retries,
+            host=host,
+            options=options,
+        )
+        return cls.from_llm_client(ontology, llm_client, settings)
+
     @classmethod
     def from_openai(
+
         cls,
         ontology: Ontology,
         config: Optional[GraphicalizerConfig] = None,
@@ -1552,6 +1731,7 @@ class LLMGraphicalizer:
             client=client,
             prompt_snapshot_path=settings.prompt_snapshot_path,
             node_context_config=settings.node_context,
+            casting_retries=settings.casting_retries,
         )
         return cls(
             llm_client=llm_client,
@@ -1820,6 +2000,7 @@ class LLMGraphicalizer:
 
         prompt = getattr(self.llm_client, "prompt", None)
         run_metadata = {
+            "provider": getattr(self.llm_client, "provider", None),
             "model": getattr(self.llm_client, "model", None),
             "source_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
             "prompt_sha256": (
@@ -1883,11 +2064,13 @@ You are an ontology-mapping component for a typed knowledge graph.
 Given the source text, a free-form extraction, and an ontology, assign each
 extracted entity exactly one ontology entity type when justified. Assign each
 extracted relation exactly one ontology relation type when justified. Use the
-exact ontology identifiers supplied; never invent identifiers. Preserve all
-entity ids, relation ids, and endpoints. If a mapping is genuinely unsupported,
-use null for ontology_type rather than guessing. Do not add entities or
-relations and do not alter the graph topology. Keep canonical names close to
-the wording supported by the text, and place specific details in attributes.
+exact dictionary keys under entity_types and relation_types as ontology_type
+values; never use a label, synonym, inverse value, description, or free-form
+relation name. Preserve all entity ids, relation ids, and endpoints. Every
+returned graph object must have one exact ontology type because untyped objects
+cannot enter the final graph. Do not add entities or relations and do not alter
+the graph topology. Keep canonical names close to the wording supported by the
+text, and place specific details in attributes.
 """.strip()
 
 
@@ -1922,6 +2105,7 @@ Graphicalizer = LLMGraphicalizer
 
 __all__ = [
     "DEFAULT_MODEL",
+    "DEFAULT_OLLAMA_MODEL",
     "FreeEntity",
     "FreeRelation",
     "FreeGraphExtraction",
@@ -1947,6 +2131,8 @@ __all__ = [
     "GraphicalizerPrompt",
     "ExtractionDensityConfig",
     "OpenAIResponsesClient",
+    "OllamaResponsesAdapter",
+    "OllamaStructuredClient",
     "LLMGraphicalizer",
     "Graphicalizer",
     "GraphicalizerError",
@@ -1957,3 +2143,105 @@ __all__ = [
     "load_text",
     "load_ontology",
 ]
+
+
+class OllamaResponsesAdapter:
+    """Expose Ollama chat structured outputs through the internal response contract."""
+
+    def __init__(
+        self,
+        client: Any,
+        *,
+        options: Optional[Mapping[str, Any]] = None,
+    ) -> None:
+        self.client = client
+        self.options = dict(options or {})
+        self.responses = self
+
+    def parse(
+        self,
+        *,
+        model: str,
+        input: Sequence[Mapping[str, Any]],
+        text_format: Any,
+    ) -> Any:
+        messages = [
+            {
+                "role": str(message["role"]),
+                "content": str(message.get("content", "")),
+            }
+            for message in input
+        ]
+        request: Dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "format": text_format.model_json_schema(),
+            "stream": False,
+        }
+        if self.options:
+            request["options"] = self.options
+        response = self.client.chat(**request)
+        message = getattr(response, "message", None)
+        content = getattr(message, "content", None) if message is not None else None
+        if content is None and isinstance(response, Mapping):
+            response_message = response.get("message", {})
+            content = response_message.get("content")
+        if not content:
+            raise LLMResponseError("Ollama returned no structured response content.")
+        try:
+            parsed = text_format.model_validate_json(content)
+        except Exception as exc:
+            raise LLMResponseError(
+                "Ollama returned content that does not match the requested schema."
+            ) from exc
+        return SimpleNamespace(output_parsed=parsed)
+
+
+class OllamaStructuredClient(OpenAIResponsesClient):
+    """Structured-output LLM client backed by a local Ollama server.
+
+    Ollama's chat API receives the Pydantic JSON schema through its format
+    parameter. The rest of the extraction, casting, validation, and context
+    workflow is shared with the provider-independent client contract.
+    """
+
+    provider = "ollama"
+
+    def __init__(
+        self,
+        prompt: GraphicalizerPrompt,
+        ontology: Ontology,
+        extraction_density: Optional[ExtractionDensityConfig] = None,
+        model: str = DEFAULT_OLLAMA_MODEL,
+        client: Any = None,
+        prompt_snapshot_path: Optional[str | Path] = None,
+        node_context_config: Optional[NodeContextConfig] = None,
+        casting_retries: int = 1,
+        host: Optional[str] = None,
+        options: Optional[Mapping[str, Any]] = None,
+    ) -> None:
+        if client is None:
+            try:
+                from ollama import Client
+            except ImportError as exc:  # pragma: no cover - environment dependent
+                raise MissingDependencyError(
+                    "Install the Ollama extra with: python -m pip install -e '.[ollama]'"
+                ) from exc
+            client = Client(host=host) if host else Client()
+        if isinstance(client, OllamaResponsesAdapter):
+            adapter = client
+            raw_client = client.client
+        else:
+            adapter = OllamaResponsesAdapter(client, options=options)
+            raw_client = client
+        super().__init__(
+            prompt=prompt,
+            ontology=ontology,
+            extraction_density=extraction_density,
+            model=model,
+            client=adapter,
+            prompt_snapshot_path=prompt_snapshot_path,
+            node_context_config=node_context_config,
+            casting_retries=casting_retries,
+        )
+        self.ollama_client = raw_client

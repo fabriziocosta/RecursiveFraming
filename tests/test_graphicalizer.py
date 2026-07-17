@@ -1,12 +1,15 @@
 import unittest
 
 from graphicalizer import (
+    ExtractionDensityConfig,
     FreeEntity,
     FreeGraphExtraction,
     FreeRelation,
+    GraphicalizerPrompt,
     GraphicalizerConfig,
     LLMGraphicalizer,
     NodeContext,
+    OpenAIResponsesClient,
     Ontology,
     OntologyCasting,
     OntologyEntity,
@@ -44,6 +47,56 @@ class FakeClient:
             NodeContext(entity.entity_id, f"Context for {entity.mention_text}.")
             for entity in extraction.entities
         )
+
+
+class RepairResponses:
+    def __init__(self):
+        self.calls = 0
+
+    def parse(self, **kwargs):
+        self.calls += 1
+        casting_type = kwargs["text_format"]
+        relation_type = "not_in_ontology" if self.calls == 1 else "links"
+        return type(
+            "Response",
+            (),
+            {
+                "output_parsed": casting_type(
+                    entities=[
+                        {
+                            "id": "e1",
+                            "ontology_type": "thing",
+                            "canonical_name": "alpha",
+                            "attributes": [],
+                            "confidence": 1.0,
+                        },
+                        {
+                            "id": "e2",
+                            "ontology_type": "thing",
+                            "canonical_name": "beta",
+                            "attributes": [],
+                            "confidence": 1.0,
+                        },
+                    ],
+                    relations=[
+                        {
+                            "id": "r1",
+                            "source_id": "e1",
+                            "target_id": "e2",
+                            "ontology_type": relation_type,
+                            "attributes": [],
+                            "confidence": 1.0,
+                        }
+                    ],
+                    notes="",
+                )
+            },
+        )()
+
+
+class RepairClient:
+    def __init__(self):
+        self.responses = RepairResponses()
 
 
 class GraphicalizerTests(unittest.TestCase):
@@ -104,6 +157,33 @@ class GraphicalizerTests(unittest.TestCase):
 
         self.assertEqual(set(result.normalized_graph.nodes), {"e1", "e2"})
         self.assertEqual(result.normalization_report["discarded_entity_ids"], ("e3",))
+
+    def test_openai_casting_retries_invalid_ontology_types(self):
+        extraction = FreeGraphExtraction(
+            entities=(
+                FreeEntity("e1", "alpha", "raw"),
+                FreeEntity("e2", "beta", "raw"),
+            ),
+            relations=(FreeRelation("r1", "e1", "e2", "connects"),),
+        )
+        client = RepairClient()
+        prompt = GraphicalizerPrompt.default().render(
+            self.ontology,
+            ExtractionDensityConfig(),
+            model="test-model",
+        )
+        llm_client = OpenAIResponsesClient(
+            prompt=prompt,
+            ontology=self.ontology,
+            client=client,
+            model="test-model",
+            casting_retries=1,
+        )
+
+        casting = llm_client.cast_to_ontology("alpha connects beta", extraction, self.ontology)
+
+        self.assertEqual(casting.relations[0].ontology_type, "links")
+        self.assertEqual(client.responses.calls, 2)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,359 @@
+name: subgraph-narrator
+version: 0.1.0
+system: "You are a scientific narrative component. Given a connected graph substructure\
+  \ and its ontology, write a plausible, concise narrative of the information contained\
+  \ in that subgraph.\n\nUse every relevant node attribute, edge attribute, ontology\
+  \ type, raw mention, and available node context. Explain relationships and preserve\
+  \ edge direction. Ground exclusively in the supplied subgraph and ontology. Do not\
+  \ introduce entities, relations, causal claims, or unsupported facts. Do not describe\
+  \ the graph mechanically; express its scientific meaning in coherent prose.\n\n\
+  Aim approximately for the requested word count. Do not pad the narrative. If the\
+  \ subgraph is ambiguous or the evidence is limited, state that uncertainty briefly.\n\
+  \n\nRUNTIME NARRATIVE EFFORT\nTreat this as an approximate target, not a reason\
+  \ to add unsupported facts:\n{\n  \"target_words\": 100\n}\n\nONTOLOGY\nUse the\
+  \ exact entity and relation identifiers supplied here when interpreting typed graph\
+  \ attributes:\n{\n  \"entity_types\": {\n    \"animal_host\": {\n      \"attributes\"\
+  : [\n        \"species\",\n        \"common_name\",\n        \"life_stage\",\n \
+  \       \"sex\",\n        \"domestic_status\"\n      ],\n      \"description\":\
+  \ \"A non-human animal considered in relation to infection, carriage, exposure,\
+  \ or transmission.\",\n      \"label\": \"Animal host\",\n      \"parent\": \"host\"\
+  ,\n      \"synonyms\": [\n        \"animal\",\n        \"non-human host\"\n    \
+  \  ]\n    },\n    \"animal_population\": {\n      \"attributes\": [\n        \"\
+  species\",\n        \"population_name\",\n        \"location\",\n        \"size\"\
+  \n      ],\n      \"description\": \"A geographically or biologically defined group\
+  \ of non-human animals.\",\n      \"label\": \"Animal population\",\n      \"parent\"\
+  : \"biological_host\",\n      \"synonyms\": [\n        \"wildlife population\",\n\
+  \        \"livestock population\",\n        \"animal group\"\n      ]\n    },\n\
+  \    \"assay\": {\n      \"attributes\": [\n        \"assay_name\",\n        \"\
+  target\",\n        \"platform\",\n        \"sensitivity\",\n        \"specificity\"\
+  \n      ],\n      \"description\": \"A laboratory procedure used to detect, identify,\
+  \ quantify, or characterize a pathogen or immune response.\",\n      \"examples\"\
+  : [\n        \"reverse-transcription polymerase chain reaction\",\n        \"enzyme-linked\
+  \ immunosorbent assay\"\n      ],\n      \"label\": \"Laboratory assay\",\n    \
+  \  \"parent\": \"investigation_entity\",\n      \"synonyms\": [\n        \"test\"\
+  ,\n        \"laboratory test\",\n        \"diagnostic assay\"\n      ]\n    },\n\
+  \    \"bacterial_pathogen\": {\n      \"attributes\": [\n        \"canonical_name\"\
+  ,\n        \"species\",\n        \"strain\",\n        \"serotype\",\n        \"\
+  resistance_profile\"\n      ],\n      \"description\": \"A bacterium associated\
+  \ with infection or disease.\",\n      \"examples\": [\n        \"Bacillus anthracis\"\
+  ,\n        \"Escherichia coli\"\n      ],\n      \"label\": \"Bacterial pathogen\"\
+  ,\n      \"parent\": \"pathogen\",\n      \"synonyms\": [\n        \"bacterium\"\
+  ,\n        \"bacterial agent\"\n      ]\n    },\n    \"biological_host\": {\n  \
+  \    \"abstract\": false,\n      \"description\": \"An organism or host population\
+  \ that carries, acquires, or transmits a pathogen.\",\n      \"label\": \"Biological\
+  \ host\"\n    },\n    \"case\": {\n      \"attributes\": [\n        \"case_status\"\
+  ,\n        \"confirmation_method\",\n        \"onset_date\",\n        \"outcome\"\
+  \n      ],\n      \"description\": \"An individual occurrence of disease or infection\
+  \ meeting a stated clinical or laboratory definition.\",\n      \"label\": \"Human\
+  \ case\",\n      \"parent\": \"investigation_entity\",\n      \"synonyms\": [\n\
+  \        \"patient case\",\n        \"confirmed case\",\n        \"suspected case\"\
+  \n      ]\n    },\n    \"clinical_entity\": {\n      \"abstract\": false,\n    \
+  \  \"description\": \"A disease, clinical presentation, symptom, sign, or biological\
+  \ state observed in a patient.\",\n      \"label\": \"Clinical entity\"\n    },\n\
+  \    \"clinical_syndrome\": {\n      \"attributes\": [\n        \"syndrome_name\"\
+  ,\n        \"severity\",\n        \"onset\",\n        \"duration\"\n      ],\n \
+  \     \"description\": \"A recognizable combination of clinical findings associated\
+  \ with a disease or infection.\",\n      \"examples\": [\n        \"acute febrile\
+  \ encephalitis\"\n      ],\n      \"label\": \"Clinical syndrome\",\n      \"parent\"\
+  : \"clinical_entity\",\n      \"synonyms\": [\n        \"syndrome\",\n        \"\
+  clinical presentation\"\n      ]\n    },\n    \"collection_site\": {\n      \"attributes\"\
+  : [\n        \"site_name\",\n        \"site_type\",\n        \"latitude\",\n   \
+  \     \"longitude\"\n      ],\n      \"description\": \"A location where a specimen,\
+  \ environmental sample, or animal sample is collected.\",\n      \"label\": \"Collection\
+  \ site\",\n      \"parent\": \"geographic_location\",\n      \"synonyms\": [\n \
+  \       \"sampling site\",\n        \"field site\",\n        \"study site\"\n  \
+  \    ]\n    },\n    \"contaminated_material\": {\n      \"attributes\": [\n    \
+  \    \"material_type\",\n        \"contamination_status\",\n        \"collection_site\"\
+  \n      ],\n      \"description\": \"A non-host material containing or suspected\
+  \ to contain a pathogen.\",\n      \"examples\": [\n        \"raw date-palm sap\"\
+  ,\n        \"residual sap\",\n        \"protective covering\"\n      ],\n      \"\
+  label\": \"Contaminated material\",\n      \"parent\": \"exposure_and_transmission\"\
+  ,\n      \"synonyms\": [\n        \"contaminated food\",\n        \"contaminated\
+  \ environmental material\",\n        \"vehicle\"\n      ]\n    },\n    \"epidemiological_measure\"\
+  : {\n      \"attributes\": [\n        \"measure_name\",\n        \"value\",\n  \
+  \      \"confidence_interval\",\n        \"p_value\",\n        \"adjustment_set\"\
+  \n      ],\n      \"description\": \"A quantitative estimate describing infection\
+  \ risk, transmission, or association with an exposure.\",\n      \"examples\": [\n\
+  \        \"odds ratio\",\n        \"attack rate\",\n        \"reproduction number\"\
+  \n      ],\n      \"label\": \"Epidemiological measure\",\n      \"parent\": \"\
+  investigation_entity\",\n      \"synonyms\": [\n        \"effect estimate\",\n \
+  \       \"risk estimate\",\n        \"association measure\"\n      ]\n    },\n \
+  \   \"exposure\": {\n      \"attributes\": [\n        \"route\",\n        \"intensity\"\
+  ,\n        \"duration\",\n        \"frequency\",\n        \"start_time\",\n    \
+  \    \"end_time\"\n      ],\n      \"description\": \"Contact between a host and\
+  \ a pathogen, infected host, contaminated material, or environment.\",\n      \"\
+  label\": \"Exposure\",\n      \"parent\": \"exposure_and_transmission\",\n     \
+  \ \"synonyms\": [\n        \"contact\",\n        \"contact event\"\n      ]\n  \
+  \  },\n    \"exposure_and_transmission\": {\n      \"abstract\": false,\n      \"\
+  description\": \"An event, route, source, or circumstance through which a pathogen\
+  \ reaches a host.\",\n      \"label\": \"Exposure and transmission\"\n    },\n \
+  \   \"food_or_drink\": {\n      \"attributes\": [\n        \"name\",\n        \"\
+  raw_or_processed\",\n        \"treatment\"\n      ],\n      \"description\": \"\
+  A food or drink that may serve as a vehicle for pathogen exposure.\",\n      \"\
+  examples\": [\n        \"raw date-palm sap\"\n      ],\n      \"label\": \"Food\
+  \ or drink\",\n      \"parent\": \"contaminated_material\",\n      \"synonyms\"\
+  : [\n        \"food vehicle\",\n        \"beverage\",\n        \"consumable\"\n\
+  \      ]\n    },\n    \"fungal_pathogen\": {\n      \"attributes\": [\n        \"\
+  canonical_name\",\n        \"species\",\n        \"strain\",\n        \"resistance_profile\"\
+  \n      ],\n      \"description\": \"A fungus associated with infection or disease.\"\
+  ,\n      \"examples\": [\n        \"Candida auris\"\n      ],\n      \"label\":\
+  \ \"Fungal pathogen\",\n      \"parent\": \"pathogen\",\n      \"synonyms\": [\n\
+  \        \"fungus\",\n        \"fungal agent\"\n      ]\n    },\n    \"genomic_sequence\"\
+  : {\n      \"attributes\": [\n        \"sequence_id\",\n        \"genome_region\"\
+  ,\n        \"lineage\",\n        \"accession\"\n      ],\n      \"description\"\
+  : \"A nucleotide sequence or sequence-derived representation used to compare pathogen\
+  \ isolates.\",\n      \"label\": \"Pathogen genomic sequence\",\n      \"parent\"\
+  : \"investigation_entity\",\n      \"synonyms\": [\n        \"viral sequence\",\n\
+  \        \"genome sequence\",\n        \"sequence data\"\n      ]\n    },\n    \"\
+  geographic_location\": {\n      \"attributes\": [\n        \"name\",\n        \"\
+  country\",\n        \"administrative_level\",\n        \"latitude\",\n        \"\
+  longitude\"\n      ],\n      \"description\": \"A named or described geographic\
+  \ area where a host, specimen, exposure, or case is located.\",\n      \"examples\"\
+  : [\n        \"Bangladesh\",\n        \"rural agricultural community\",\n      \
+  \  \"date-palm collection site\"\n      ],\n      \"label\": \"Geographic location\"\
+  ,\n      \"parent\": \"place_and_time\",\n      \"synonyms\": [\n        \"place\"\
+  ,\n        \"site\",\n        \"region\",\n        \"community\"\n      ]\n    },\n\
+  \    \"host\": {\n      \"attributes\": [\n        \"species\",\n        \"life_stage\"\
+  ,\n        \"sex\",\n        \"population\"\n      ],\n      \"description\": \"\
+  An organism in which a pathogen is present or to which exposure is assessed.\",\n\
+  \      \"label\": \"Host\",\n      \"parent\": \"biological_host\",\n      \"synonyms\"\
+  : [\n        \"infected host\",\n        \"exposed host\"\n      ]\n    },\n   \
+  \ \"human_host\": {\n      \"attributes\": [\n        \"age\",\n        \"age_group\"\
+  ,\n        \"sex\",\n        \"occupation\",\n        \"residence\",\n        \"\
+  case_status\"\n      ],\n      \"description\": \"An individual human considered\
+  \ in relation to infection, illness, exposure, or care.\",\n      \"label\": \"\
+  Human host\",\n      \"parent\": \"host\",\n      \"synonyms\": [\n        \"person\"\
+  ,\n        \"patient\",\n        \"human case\"\n      ]\n    },\n    \"human_to_human_transmission\"\
+  : {\n      \"attributes\": [\n        \"route\",\n        \"generation\",\n    \
+  \    \"contact_type\",\n        \"evidence_level\"\n      ],\n      \"description\"\
+  : \"Transmission of a pathogen from one human host to another human host.\",\n \
+  \     \"label\": \"Human-to-human transmission\",\n      \"parent\": \"exposure_and_transmission\"\
+  ,\n      \"synonyms\": [\n        \"person-to-person transmission\",\n        \"\
+  secondary transmission\"\n      ]\n    },\n    \"immune_response\": {\n      \"\
+  attributes\": [\n        \"isotype\",\n        \"target\",\n        \"result\",\n\
+  \        \"titre\"\n      ],\n      \"description\": \"An immune measurement or\
+  \ response associated with exposure or infection.\",\n      \"examples\": [\n  \
+  \      \"anti-Nipah immunoglobulin M\"\n      ],\n      \"label\": \"Immune response\"\
+  ,\n      \"parent\": \"clinical_entity\",\n      \"synonyms\": [\n        \"serological\
+  \ response\",\n        \"antibody response\"\n      ]\n    },\n    \"infection_control_measure\"\
+  : {\n      \"attributes\": [\n        \"measure_name\",\n        \"setting\",\n\
+  \        \"target_route\"\n      ],\n      \"description\": \"A measure used to\
+  \ limit transmission from an infected or suspected host.\",\n      \"examples\"\
+  : [\n        \"rapid infection-control precautions\",\n        \"respiratory protection\"\
+  \n      ],\n      \"label\": \"Infection-control measure\",\n      \"parent\": \"\
+  intervention\",\n      \"synonyms\": [\n        \"healthcare infection control\"\
+  ,\n        \"isolation measure\"\n      ]\n    },\n    \"infectious_disease\": {\n\
+  \      \"attributes\": [\n        \"disease_name\",\n        \"severity\",\n   \
+  \     \"case_definition\"\n      ],\n      \"description\": \"A disease caused by\
+  \ the presence or activity of an infectious agent.\",\n      \"examples\": [\n \
+  \       \"Nipah virus infection\"\n      ],\n      \"label\": \"Infectious disease\"\
+  ,\n      \"parent\": \"clinical_entity\",\n      \"synonyms\": [\n        \"infection\"\
+  ,\n        \"infectious illness\"\n      ]\n    },\n    \"intervention\": {\n  \
+  \    \"abstract\": false,\n      \"description\": \"An action intended to prevent\
+  \ infection, reduce transmission, diagnose disease, or improve outcomes.\",\n  \
+  \    \"label\": \"Public-health or clinical intervention\"\n    },\n    \"investigation_entity\"\
+  : {\n      \"abstract\": false,\n      \"description\": \"A study, outbreak, sample,\
+  \ test, result, or epidemiological grouping used to investigate infection.\",\n\
+  \      \"label\": \"Investigation entity\"\n    },\n    \"outbreak\": {\n      \"\
+  attributes\": [\n        \"start_date\",\n        \"end_date\",\n        \"case_count\"\
+  ,\n        \"location\",\n        \"outbreak_status\"\n      ],\n      \"description\"\
+  : \"A temporally or geographically associated group of infections or suspected infections.\"\
+  ,\n      \"label\": \"Outbreak or case cluster\",\n      \"parent\": \"investigation_entity\"\
+  ,\n      \"synonyms\": [\n        \"case cluster\",\n        \"epidemic event\"\
+  ,\n        \"transmission cluster\"\n      ]\n    },\n    \"pathogen\": {\n    \
+  \  \"attributes\": [\n        \"canonical_name\",\n        \"taxonomic_rank\",\n\
+  \        \"strain\",\n        \"variant\"\n      ],\n      \"description\": \"A\
+  \ biological agent capable of causing infection or disease in a host.\",\n     \
+  \ \"examples\": [\n        \"Nipah virus\"\n      ],\n      \"label\": \"Pathogen\"\
+  ,\n      \"parent\": \"pathogen_entity\",\n      \"synonyms\": [\n        \"infectious\
+  \ agent\",\n        \"disease-causing agent\"\n      ]\n    },\n    \"pathogen_component\"\
+  : {\n      \"attributes\": [\n        \"canonical_name\",\n        \"component_type\"\
+  \n      ],\n      \"description\": \"A biological component or product of a pathogen\
+  \ measured in a specimen.\",\n      \"examples\": [\n        \"viral RNA\",\n  \
+  \      \"viral antigen\"\n      ],\n      \"label\": \"Pathogen component\",\n \
+  \     \"parent\": \"pathogen_entity\",\n      \"synonyms\": [\n        \"microbial\
+  \ component\",\n        \"viral component\"\n      ]\n    },\n    \"pathogen_entity\"\
+  : {\n      \"abstract\": false,\n      \"description\": \"An infectious biological\
+  \ agent or a named taxonomic grouping of agents.\",\n      \"label\": \"Pathogen\
+  \ entity\"\n    },\n    \"place_and_time\": {\n      \"abstract\": false,\n    \
+  \  \"description\": \"A location or temporal expression used to ground an observation\
+  \ or event.\",\n      \"label\": \"Place and time\"\n    },\n    \"prevention_measure\"\
+  : {\n      \"attributes\": [\n        \"measure_name\",\n        \"target_route\"\
+  ,\n        \"implementation_level\",\n        \"effectiveness\"\n      ],\n    \
+  \  \"description\": \"An action that reduces the probability of exposure or transmission.\"\
+  ,\n      \"examples\": [\n        \"covering collection vessels\",\n        \"avoiding\
+  \ raw date-palm sap\"\n      ],\n      \"label\": \"Prevention measure\",\n    \
+  \  \"parent\": \"intervention\",\n      \"synonyms\": [\n        \"control measure\"\
+  ,\n        \"protective measure\",\n        \"mitigation measure\"\n      ]\n  \
+  \  },\n    \"reservoir_host\": {\n      \"attributes\": [\n        \"species\",\n\
+  \        \"population\",\n        \"geographic_range\",\n        \"evidence_type\"\
+  \n      ],\n      \"description\": \"A host population in which a pathogen is maintained\
+  \ and from which infection may spill over.\",\n      \"examples\": [\n        \"\
+  Pteropus fruit bat\"\n      ],\n      \"label\": \"Reservoir host\",\n      \"parent\"\
+  : \"animal_host\",\n      \"synonyms\": [\n        \"natural reservoir\",\n    \
+  \    \"reservoir species\",\n        \"maintenance host\"\n      ]\n    },\n   \
+  \ \"specimen\": {\n      \"attributes\": [\n        \"specimen_type\",\n       \
+  \ \"source_host\",\n        \"collection_time\",\n        \"collection_site\"\n\
+  \      ],\n      \"description\": \"Material collected for pathogen detection, genomic\
+  \ analysis, or immune testing.\",\n      \"examples\": [\n        \"serum\",\n \
+  \       \"throat swab\",\n        \"urine\",\n        \"cerebrospinal fluid\",\n\
+  \        \"residual sap\",\n        \"bat specimen\"\n      ],\n      \"label\"\
+  : \"Clinical or environmental specimen\",\n      \"parent\": \"investigation_entity\"\
+  ,\n      \"synonyms\": [\n        \"sample\",\n        \"biological sample\",\n\
+  \        \"environmental sample\"\n      ]\n    },\n    \"surveillance_activity\"\
+  : {\n      \"attributes\": [\n        \"activity_name\",\n        \"population\"\
+  ,\n        \"frequency\",\n        \"coverage\"\n      ],\n      \"description\"\
+  : \"Systematic collection and analysis of observations to detect or monitor infection\
+  \ and transmission.\",\n      \"examples\": [\n        \"hospital-based surveillance\"\
+  ,\n        \"clinical surveillance for encephalitis\"\n      ],\n      \"label\"\
+  : \"Surveillance activity\",\n      \"parent\": \"intervention\",\n      \"synonyms\"\
+  : [\n        \"disease surveillance\",\n        \"case surveillance\",\n       \
+  \ \"monitoring\"\n      ]\n    },\n    \"symptom_or_sign\": {\n      \"attributes\"\
+  : [\n        \"finding_name\",\n        \"severity\",\n        \"onset\",\n    \
+  \    \"duration\"\n      ],\n      \"description\": \"An observed or reported manifestation\
+  \ of disease.\",\n      \"examples\": [\n        \"fever\",\n        \"altered mental\
+  \ status\",\n        \"respiratory secretion\"\n      ],\n      \"label\": \"Symptom\
+  \ or sign\",\n      \"parent\": \"clinical_entity\",\n      \"synonyms\": [\n  \
+  \      \"clinical finding\",\n        \"manifestation\"\n      ]\n    },\n    \"\
+  test_result\": {\n      \"attributes\": [\n        \"result_value\",\n        \"\
+  result_category\",\n        \"target\",\n        \"confidence\",\n        \"limit_of_detection\"\
+  \n      ],\n      \"description\": \"The observed output of an assay for a particular\
+  \ specimen or subject.\",\n      \"label\": \"Test result\",\n      \"parent\":\
+  \ \"investigation_entity\",\n      \"synonyms\": [\n        \"laboratory result\"\
+  ,\n        \"diagnostic result\"\n      ]\n    },\n    \"time_period\": {\n    \
+  \  \"attributes\": [\n        \"start_date\",\n        \"end_date\",\n        \"\
+  season\",\n        \"temporal_precision\"\n      ],\n      \"description\": \"A\
+  \ point or interval in time associated with a case, exposure, collection, or outbreak.\"\
+  ,\n      \"examples\": [\n        \"winter date-palm sap harvesting season\"\n \
+  \     ],\n      \"label\": \"Time period\",\n      \"parent\": \"place_and_time\"\
+  ,\n      \"synonyms\": [\n        \"date\",\n        \"season\",\n        \"period\"\
+  ,\n        \"interval\"\n      ]\n    },\n    \"transmission_route\": {\n      \"\
+  attributes\": [\n        \"route_name\",\n        \"biological_mechanism\"\n   \
+  \   ],\n      \"description\": \"The mechanism or pathway by which a pathogen moves\
+  \ between source and recipient hosts.\",\n      \"examples\": [\n        \"ingestion\"\
+  ,\n        \"respiratory secretions\",\n        \"direct contact\",\n        \"\
+  vector bite\"\n      ],\n      \"label\": \"Transmission route\",\n      \"parent\"\
+  : \"exposure_and_transmission\",\n      \"synonyms\": [\n        \"route of transmission\"\
+  ,\n        \"mode of transmission\"\n      ]\n    },\n    \"vector\": {\n      \"\
+  attributes\": [\n        \"species\",\n        \"vector_status\"\n      ],\n   \
+  \   \"description\": \"An organism that transmits a pathogen between hosts, usually\
+  \ through feeding or contact.\",\n      \"examples\": [\n        \"mosquito\",\n\
+  \        \"tick\"\n      ],\n      \"label\": \"Vector\",\n      \"parent\": \"\
+  biological_host\",\n      \"synonyms\": [\n        \"arthropod vector\",\n     \
+  \   \"biological vector\"\n      ]\n    },\n    \"virus\": {\n      \"attributes\"\
+  : [\n        \"canonical_name\",\n        \"family\",\n        \"genus\",\n    \
+  \    \"genome_type\",\n        \"strain\",\n        \"variant\"\n      ],\n    \
+  \  \"description\": \"An infectious virus identified by a scientific or common name.\"\
+  ,\n      \"examples\": [\n        \"Nipah virus\"\n      ],\n      \"label\": \"\
+  Virus\",\n      \"parent\": \"pathogen\",\n      \"synonyms\": [\n        \"viral\
+  \ pathogen\",\n        \"virus species\"\n      ]\n    },\n    \"virus_family\"\
+  : {\n      \"attributes\": [\n        \"canonical_name\",\n        \"taxonomic_rank\"\
+  \n      ],\n      \"description\": \"A taxonomic family containing one or more virus\
+  \ genera or species.\",\n      \"examples\": [\n        \"Paramyxoviridae\"\n  \
+  \    ],\n      \"label\": \"Virus family\",\n      \"parent\": \"pathogen_entity\"\
+  ,\n      \"synonyms\": [\n        \"viral family\"\n      ]\n    },\n    \"zoonotic_spillover\"\
+  : {\n      \"attributes\": [\n        \"source_host\",\n        \"recipient_host\"\
+  ,\n        \"route\",\n        \"evidence_level\",\n        \"date\"\n      ],\n\
+  \      \"description\": \"Transmission of a pathogen from a non-human animal host\
+  \ or animal-associated source to a human host.\",\n      \"label\": \"Zoonotic spillover\"\
+  ,\n      \"parent\": \"exposure_and_transmission\",\n      \"synonyms\": [\n   \
+  \     \"animal-to-human transmission\",\n        \"zoonotic jump\",\n        \"\
+  cross-species transmission\"\n      ]\n    }\n  },\n  \"metadata\": {\n    \"description\"\
+  : \"A practical entity and relation vocabulary for extracting microbiological, clinical,\
+  \ epidemiological, and ecological information from scientific text. The hierarchy\
+  \ is intentionally shallow and domain-specific.\",\n    \"id\": \"microbiology-zoonosis\"\
+  ,\n    \"label\": \"Microbiology and Zoonotic Disease Entity Ontology\",\n    \"\
+  language\": \"en\",\n    \"roots\": [\n      \"pathogen_entity\",\n      \"biological_host\"\
+  ,\n      \"clinical_entity\",\n      \"exposure_and_transmission\",\n      \"investigation_entity\"\
+  ,\n      \"place_and_time\",\n      \"intervention\"\n    ],\n    \"version\": \"\
+  0.1.0\"\n  },\n  \"relation_types\": {\n    \"associated_with\": {\n      \"description\"\
+  : \"An epidemiological estimate quantifies an association involving an exposure.\"\
+  ,\n      \"domain\": \"epidemiological_measure\",\n      \"inverse\": \"measured_by\"\
+  ,\n      \"label\": \"associated with\",\n      \"range\": \"exposure\"\n    },\n\
+  \    \"belongs_to_outbreak\": {\n      \"description\": \"A case is part of an outbreak\
+  \ or case cluster.\",\n      \"domain\": \"case\",\n      \"inverse\": \"includes_case\"\
+  ,\n      \"label\": \"belongs to outbreak\",\n      \"range\": \"outbreak\"\n  \
+  \  },\n    \"carried_by\": {\n      \"description\": \"A host carries or harbours\
+  \ a pathogen.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"carries_pathogen\"\
+  ,\n      \"label\": \"carried by\",\n      \"range\": \"host\"\n    },\n    \"causes_infection\"\
+  : {\n      \"description\": \"A pathogen causes infection in a host.\",\n      \"\
+  domain\": \"pathogen\",\n      \"inverse\": \"infected_by\",\n      \"label\": \"\
+  causes infection\",\n      \"range\": \"host\"\n    },\n    \"collected_at\": {\n\
+  \      \"description\": \"A specimen is collected at a geographic or environmental\
+  \ site.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"collection_site_for\"\
+  ,\n      \"label\": \"collected at\",\n      \"range\": \"collection_site\"\n  \
+  \  },\n    \"consumes\": {\n      \"description\": \"A human host ingests a food\
+  \ or drink.\",\n      \"domain\": \"human_host\",\n      \"inverse\": \"consumed_by\"\
+  ,\n      \"label\": \"consumes\",\n      \"range\": \"food_or_drink\"\n    },\n\
+  \    \"contaminates\": {\n      \"description\": \"A host deposits or introduces\
+  \ a pathogen into a material or environment.\",\n      \"domain\": \"host\",\n \
+  \     \"inverse\": \"contaminated_by\",\n      \"label\": \"contaminates\",\n  \
+  \    \"range\": \"contaminated_material\"\n    },\n    \"derived_from\": {\n   \
+  \   \"description\": \"A result is based on a particular specimen.\",\n      \"\
+  domain\": \"test_result\",\n      \"inverse\": \"supports_result\",\n      \"label\"\
+  : \"derived from\",\n      \"range\": \"specimen\"\n    },\n    \"detects\": {\n\
+  \      \"description\": \"A result indicates the presence of a pathogen or pathogen\
+  \ component.\",\n      \"domain\": \"test_result\",\n      \"inverse\": \"detected_by\"\
+  ,\n      \"label\": \"detects\",\n      \"range\": \"pathogen_entity\"\n    },\n\
+  \    \"exposes\": {\n      \"description\": \"A material or source creates an exposure\
+  \ opportunity for a host.\",\n      \"domain\": \"contaminated_material\",\n   \
+  \   \"inverse\": \"exposed_to\",\n      \"label\": \"exposes\",\n      \"range\"\
+  : \"host\"\n    },\n    \"has_symptom\": {\n      \"description\": \"A host exhibits\
+  \ a symptom or clinical sign.\",\n      \"domain\": \"host\",\n      \"inverse\"\
+  : \"symptom_of\",\n      \"label\": \"has symptom or sign\",\n      \"range\": \"\
+  symptom_or_sign\"\n    },\n    \"infects\": {\n      \"description\": \"A pathogen\
+  \ is detected in or associated with infection of a host.\",\n      \"domain\": \"\
+  pathogen\",\n      \"inverse\": \"infected_by\",\n      \"label\": \"infects\",\n\
+  \      \"range\": \"host\"\n    },\n    \"maintained_in\": {\n      \"description\"\
+  : \"A pathogen is maintained in a reservoir host population.\",\n      \"domain\"\
+  : \"pathogen\",\n      \"inverse\": \"maintains_pathogen\",\n      \"label\": \"\
+  maintained in\",\n      \"range\": \"reservoir_host\"\n    },\n    \"occurred_during\"\
+  : {\n      \"description\": \"An outbreak, exposure, or case occurred during a temporal\
+  \ interval.\",\n      \"domain\": \"outbreak\",\n      \"inverse\": \"time_of_outbreak\"\
+  ,\n      \"label\": \"occurred during\",\n      \"range\": \"time_period\"\n   \
+  \ },\n    \"occurred_in\": {\n      \"description\": \"An outbreak or case cluster\
+  \ occurred in a location.\",\n      \"domain\": \"outbreak\",\n      \"inverse\"\
+  : \"location_of_outbreak\",\n      \"label\": \"occurred in\",\n      \"range\"\
+  : \"geographic_location\"\n    },\n    \"presents_with\": {\n      \"description\"\
+  : \"A case has a documented clinical syndrome.\",\n      \"domain\": \"case\",\n\
+  \      \"inverse\": \"presentation_of\",\n      \"label\": \"presents with\",\n\
+  \      \"range\": \"clinical_syndrome\"\n    },\n    \"prevents\": {\n      \"description\"\
+  : \"An intervention is intended to prevent or reduce an exposure or transmission\
+  \ event.\",\n      \"domain\": \"intervention\",\n      \"inverse\": \"reduced_by\"\
+  ,\n      \"label\": \"prevents or reduces\",\n      \"range\": \"exposure_and_transmission\"\
+  \n    },\n    \"sampled_from\": {\n      \"description\": \"A specimen is collected\
+  \ from a host.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"source_of_specimen\"\
+  ,\n      \"label\": \"sampled from\",\n      \"range\": \"host\"\n    },\n    \"\
+  spills_over_from\": {\n      \"description\": \"A pathogen moves from an animal\
+  \ host or animal-associated source into humans.\",\n      \"domain\": \"pathogen\"\
+  ,\n      \"inverse\": \"source_of_zoonotic_spillover\",\n      \"label\": \"spills\
+  \ over from\",\n      \"range\": \"animal_host\"\n    },\n    \"subtype_of\": {\n\
+  \      \"description\": \"A taxonomic or ontology concept is a more specific type\
+  \ of another concept.\",\n      \"domain\": \"pathogen_entity\",\n      \"inverse\"\
+  : \"has_subtype\",\n      \"label\": \"subtype of\",\n      \"range\": \"pathogen_entity\"\
+  \n    },\n    \"supports\": {\n      \"description\": \"An observation, result,\
+  \ or sequence analysis provides evidence for a spillover interpretation.\",\n  \
+  \    \"domain\": \"investigation_entity\",\n      \"inverse\": \"supported_by\"\
+  ,\n      \"label\": \"supports\",\n      \"range\": \"zoonotic_spillover\"\n   \
+  \ },\n    \"tested_by\": {\n      \"description\": \"A specimen is processed using\
+  \ a laboratory assay.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"\
+  tests\",\n      \"label\": \"tested by\",\n      \"range\": \"assay\"\n    },\n\
+  \    \"transmitted_by\": {\n      \"description\": \"A pathogen uses a specified\
+  \ transmission route.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
+  transmits_pathogen\",\n      \"label\": \"transmitted by\",\n      \"range\": \"\
+  transmission_route\"\n    },\n    \"transmitted_to\": {\n      \"description\":\
+  \ \"A pathogen is transmitted to a recipient host.\",\n      \"domain\": \"pathogen\"\
+  ,\n      \"inverse\": \"acquires_from\",\n      \"label\": \"transmitted to\",\n\
+  \      \"range\": \"host\"\n    },\n    \"yields_result\": {\n      \"description\"\
+  : \"An assay produces an observed test result.\",\n      \"domain\": \"assay\",\n\
+  \      \"inverse\": \"result_of\",\n      \"label\": \"yields result\",\n      \"\
+  range\": \"test_result\"\n    }\n  }\n}"
+rendered: true
+render_context:
+  template_name: subgraph-narrator
+  template_version: 0.1.0
+  model: gpt-4o-mini
+  target_words: 100
+  ontology:
+    id: microbiology-zoonosis
+    version: 0.1.0
