@@ -1,0 +1,42 @@
+# Operating-system files
+.DS_Store
+Thumbs.db
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and local configuration
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+!.env.example
+
+# Jupyter temporary state
+.ipynb_checkpoints/
+
+# IDE and editor state
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and local run traces
+*.log
+
+# Generated graph artifacts
+outputs/*.svg
+outputs/*.png
+outputs/*.pdf
+outputs/**/*.dot

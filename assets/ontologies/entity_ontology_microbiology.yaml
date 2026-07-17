@@ -1,0 +1,522 @@
+ontology:
+  id: microbiology-zoonosis
+  label: Microbiology and Zoonotic Disease Entity Ontology
+  version: 0.1.0
+  language: en
+  description: >-
+    A practical entity and relation vocabulary for extracting microbiological,
+    clinical, epidemiological, and ecological information from scientific text.
+    The hierarchy is intentionally shallow and domain-specific.
+
+  roots:
+    - pathogen_entity
+    - biological_host
+    - clinical_entity
+    - exposure_and_transmission
+    - investigation_entity
+    - place_and_time
+    - intervention
+
+entity_types:
+  pathogen_entity:
+    label: Pathogen entity
+    description: An infectious biological agent or a named taxonomic grouping of agents.
+    abstract: false
+
+  pathogen:
+    label: Pathogen
+    parent: pathogen_entity
+    synonyms: [infectious agent, disease-causing agent]
+    description: A biological agent capable of causing infection or disease in a host.
+    examples: [Nipah virus]
+    attributes: [canonical_name, taxonomic_rank, strain, variant]
+
+  virus:
+    label: Virus
+    parent: pathogen
+    synonyms: [viral pathogen, virus species]
+    description: An infectious virus identified by a scientific or common name.
+    examples: [Nipah virus]
+    attributes: [canonical_name, family, genus, genome_type, strain, variant]
+
+  virus_family:
+    label: Virus family
+    parent: pathogen_entity
+    synonyms: [viral family]
+    description: A taxonomic family containing one or more virus genera or species.
+    examples: [Paramyxoviridae]
+    attributes: [canonical_name, taxonomic_rank]
+
+  bacterial_pathogen:
+    label: Bacterial pathogen
+    parent: pathogen
+    synonyms: [bacterium, bacterial agent]
+    description: A bacterium associated with infection or disease.
+    examples: [Bacillus anthracis, Escherichia coli]
+    attributes: [canonical_name, species, strain, serotype, resistance_profile]
+
+  fungal_pathogen:
+    label: Fungal pathogen
+    parent: pathogen
+    synonyms: [fungus, fungal agent]
+    description: A fungus associated with infection or disease.
+    examples: [Candida auris]
+    attributes: [canonical_name, species, strain, resistance_profile]
+
+  pathogen_component:
+    label: Pathogen component
+    parent: pathogen_entity
+    synonyms: [microbial component, viral component]
+    description: A biological component or product of a pathogen measured in a specimen.
+    examples: [viral RNA, viral antigen]
+    attributes: [canonical_name, component_type]
+
+  biological_host:
+    label: Biological host
+    description: An organism or host population that carries, acquires, or transmits a pathogen.
+    abstract: false
+
+  host:
+    label: Host
+    parent: biological_host
+    synonyms: [infected host, exposed host]
+    description: An organism in which a pathogen is present or to which exposure is assessed.
+    attributes: [species, life_stage, sex, population]
+
+  human_host:
+    label: Human host
+    parent: host
+    synonyms: [person, patient, human case]
+    description: An individual human considered in relation to infection, illness, exposure, or care.
+    attributes: [age, age_group, sex, occupation, residence, case_status]
+
+  animal_host:
+    label: Animal host
+    parent: host
+    synonyms: [animal, non-human host]
+    description: A non-human animal considered in relation to infection, carriage, exposure, or transmission.
+    attributes: [species, common_name, life_stage, sex, domestic_status]
+
+  reservoir_host:
+    label: Reservoir host
+    parent: animal_host
+    synonyms: [natural reservoir, reservoir species, maintenance host]
+    description: A host population in which a pathogen is maintained and from which infection may spill over.
+    examples: [Pteropus fruit bat]
+    attributes: [species, population, geographic_range, evidence_type]
+
+  vector:
+    label: Vector
+    parent: biological_host
+    synonyms: [arthropod vector, biological vector]
+    description: An organism that transmits a pathogen between hosts, usually through feeding or contact.
+    examples: [mosquito, tick]
+    attributes: [species, vector_status]
+
+  animal_population:
+    label: Animal population
+    parent: biological_host
+    synonyms: [wildlife population, livestock population, animal group]
+    description: A geographically or biologically defined group of non-human animals.
+    attributes: [species, population_name, location, size]
+
+  clinical_entity:
+    label: Clinical entity
+    description: A disease, clinical presentation, symptom, sign, or biological state observed in a patient.
+    abstract: false
+
+  infectious_disease:
+    label: Infectious disease
+    parent: clinical_entity
+    synonyms: [infection, infectious illness]
+    description: A disease caused by the presence or activity of an infectious agent.
+    examples: [Nipah virus infection]
+    attributes: [disease_name, severity, case_definition]
+
+  clinical_syndrome:
+    label: Clinical syndrome
+    parent: clinical_entity
+    synonyms: [syndrome, clinical presentation]
+    description: A recognizable combination of clinical findings associated with a disease or infection.
+    examples: [acute febrile encephalitis]
+    attributes: [syndrome_name, severity, onset, duration]
+
+  symptom_or_sign:
+    label: Symptom or sign
+    parent: clinical_entity
+    synonyms: [clinical finding, manifestation]
+    description: An observed or reported manifestation of disease.
+    examples: [fever, altered mental status, respiratory secretion]
+    attributes: [finding_name, severity, onset, duration]
+
+  immune_response:
+    label: Immune response
+    parent: clinical_entity
+    synonyms: [serological response, antibody response]
+    description: An immune measurement or response associated with exposure or infection.
+    examples: [anti-Nipah immunoglobulin M]
+    attributes: [isotype, target, result, titre]
+
+  exposure_and_transmission:
+    label: Exposure and transmission
+    description: An event, route, source, or circumstance through which a pathogen reaches a host.
+    abstract: false
+
+  exposure:
+    label: Exposure
+    parent: exposure_and_transmission
+    synonyms: [contact, contact event]
+    description: Contact between a host and a pathogen, infected host, contaminated material, or environment.
+    attributes: [route, intensity, duration, frequency, start_time, end_time]
+
+  zoonotic_spillover:
+    label: Zoonotic spillover
+    parent: exposure_and_transmission
+    synonyms: [animal-to-human transmission, zoonotic jump, cross-species transmission]
+    description: Transmission of a pathogen from a non-human animal host or animal-associated source to a human host.
+    attributes: [source_host, recipient_host, route, evidence_level, date]
+
+  human_to_human_transmission:
+    label: Human-to-human transmission
+    parent: exposure_and_transmission
+    synonyms: [person-to-person transmission, secondary transmission]
+    description: Transmission of a pathogen from one human host to another human host.
+    attributes: [route, generation, contact_type, evidence_level]
+
+  transmission_route:
+    label: Transmission route
+    parent: exposure_and_transmission
+    synonyms: [route of transmission, mode of transmission]
+    description: The mechanism or pathway by which a pathogen moves between source and recipient hosts.
+    examples: [ingestion, respiratory secretions, direct contact, vector bite]
+    attributes: [route_name, biological_mechanism]
+
+  contaminated_material:
+    label: Contaminated material
+    parent: exposure_and_transmission
+    synonyms: [contaminated food, contaminated environmental material, vehicle]
+    description: A non-host material containing or suspected to contain a pathogen.
+    examples: [raw date-palm sap, residual sap, protective covering]
+    attributes: [material_type, contamination_status, collection_site]
+
+  food_or_drink:
+    label: Food or drink
+    parent: contaminated_material
+    synonyms: [food vehicle, beverage, consumable]
+    description: A food or drink that may serve as a vehicle for pathogen exposure.
+    examples: [raw date-palm sap]
+    attributes: [name, raw_or_processed, treatment]
+
+  investigation_entity:
+    label: Investigation entity
+    description: A study, outbreak, sample, test, result, or epidemiological grouping used to investigate infection.
+    abstract: false
+
+  outbreak:
+    label: Outbreak or case cluster
+    parent: investigation_entity
+    synonyms: [case cluster, epidemic event, transmission cluster]
+    description: A temporally or geographically associated group of infections or suspected infections.
+    attributes: [start_date, end_date, case_count, location, outbreak_status]
+
+  case:
+    label: Human case
+    parent: investigation_entity
+    synonyms: [patient case, confirmed case, suspected case]
+    description: An individual occurrence of disease or infection meeting a stated clinical or laboratory definition.
+    attributes: [case_status, confirmation_method, onset_date, outcome]
+
+  specimen:
+    label: Clinical or environmental specimen
+    parent: investigation_entity
+    synonyms: [sample, biological sample, environmental sample]
+    description: Material collected for pathogen detection, genomic analysis, or immune testing.
+    examples: [serum, throat swab, urine, cerebrospinal fluid, residual sap, bat specimen]
+    attributes: [specimen_type, source_host, collection_time, collection_site]
+
+  assay:
+    label: Laboratory assay
+    parent: investigation_entity
+    synonyms: [test, laboratory test, diagnostic assay]
+    description: A laboratory procedure used to detect, identify, quantify, or characterize a pathogen or immune response.
+    examples: [reverse-transcription polymerase chain reaction, enzyme-linked immunosorbent assay]
+    attributes: [assay_name, target, platform, sensitivity, specificity]
+
+  test_result:
+    label: Test result
+    parent: investigation_entity
+    synonyms: [laboratory result, diagnostic result]
+    description: The observed output of an assay for a particular specimen or subject.
+    attributes: [result_value, result_category, target, confidence, limit_of_detection]
+
+  genomic_sequence:
+    label: Pathogen genomic sequence
+    parent: investigation_entity
+    synonyms: [viral sequence, genome sequence, sequence data]
+    description: A nucleotide sequence or sequence-derived representation used to compare pathogen isolates.
+    attributes: [sequence_id, genome_region, lineage, accession]
+
+  epidemiological_measure:
+    label: Epidemiological measure
+    parent: investigation_entity
+    synonyms: [effect estimate, risk estimate, association measure]
+    description: A quantitative estimate describing infection risk, transmission, or association with an exposure.
+    examples: [odds ratio, attack rate, reproduction number]
+    attributes: [measure_name, value, confidence_interval, p_value, adjustment_set]
+
+  place_and_time:
+    label: Place and time
+    description: A location or temporal expression used to ground an observation or event.
+    abstract: false
+
+  geographic_location:
+    label: Geographic location
+    parent: place_and_time
+    synonyms: [place, site, region, community]
+    description: A named or described geographic area where a host, specimen, exposure, or case is located.
+    examples: [Bangladesh, rural agricultural community, date-palm collection site]
+    attributes: [name, country, administrative_level, latitude, longitude]
+
+  collection_site:
+    label: Collection site
+    parent: geographic_location
+    synonyms: [sampling site, field site, study site]
+    description: A location where a specimen, environmental sample, or animal sample is collected.
+    attributes: [site_name, site_type, latitude, longitude]
+
+  time_period:
+    label: Time period
+    parent: place_and_time
+    synonyms: [date, season, period, interval]
+    description: A point or interval in time associated with a case, exposure, collection, or outbreak.
+    examples: [winter date-palm sap harvesting season]
+    attributes: [start_date, end_date, season, temporal_precision]
+
+  intervention:
+    label: Public-health or clinical intervention
+    description: An action intended to prevent infection, reduce transmission, diagnose disease, or improve outcomes.
+    abstract: false
+
+  prevention_measure:
+    label: Prevention measure
+    parent: intervention
+    synonyms: [control measure, protective measure, mitigation measure]
+    description: An action that reduces the probability of exposure or transmission.
+    examples: [covering collection vessels, avoiding raw date-palm sap]
+    attributes: [measure_name, target_route, implementation_level, effectiveness]
+
+  infection_control_measure:
+    label: Infection-control measure
+    parent: intervention
+    synonyms: [healthcare infection control, isolation measure]
+    description: A measure used to limit transmission from an infected or suspected host.
+    examples: [rapid infection-control precautions, respiratory protection]
+    attributes: [measure_name, setting, target_route]
+
+  surveillance_activity:
+    label: Surveillance activity
+    parent: intervention
+    synonyms: [disease surveillance, case surveillance, monitoring]
+    description: Systematic collection and analysis of observations to detect or monitor infection and transmission.
+    examples: [hospital-based surveillance, clinical surveillance for encephalitis]
+    attributes: [activity_name, population, frequency, coverage]
+
+relation_types:
+  causes_infection:
+    label: causes infection
+    domain: pathogen
+    range: host
+    inverse: infected_by
+    description: A pathogen causes infection in a host.
+
+  infects:
+    label: infects
+    domain: pathogen
+    range: host
+    inverse: infected_by
+    description: A pathogen is detected in or associated with infection of a host.
+
+  carried_by:
+    label: carried by
+    domain: pathogen
+    range: host
+    inverse: carries_pathogen
+    description: A host carries or harbours a pathogen.
+
+  maintained_in:
+    label: maintained in
+    domain: pathogen
+    range: reservoir_host
+    inverse: maintains_pathogen
+    description: A pathogen is maintained in a reservoir host population.
+
+  spills_over_from:
+    label: spills over from
+    domain: pathogen
+    range: animal_host
+    inverse: source_of_zoonotic_spillover
+    description: A pathogen moves from an animal host or animal-associated source into humans.
+
+  transmitted_to:
+    label: transmitted to
+    domain: pathogen
+    range: host
+    inverse: acquires_from
+    description: A pathogen is transmitted to a recipient host.
+
+  transmitted_by:
+    label: transmitted by
+    domain: pathogen
+    range: transmission_route
+    inverse: transmits_pathogen
+    description: A pathogen uses a specified transmission route.
+
+  exposes:
+    label: exposes
+    domain: contaminated_material
+    range: host
+    inverse: exposed_to
+    description: A material or source creates an exposure opportunity for a host.
+
+  contaminates:
+    label: contaminates
+    domain: host
+    range: contaminated_material
+    inverse: contaminated_by
+    description: A host deposits or introduces a pathogen into a material or environment.
+
+  consumes:
+    label: consumes
+    domain: human_host
+    range: food_or_drink
+    inverse: consumed_by
+    description: A human host ingests a food or drink.
+
+  has_symptom:
+    label: has symptom or sign
+    domain: host
+    range: symptom_or_sign
+    inverse: symptom_of
+    description: A host exhibits a symptom or clinical sign.
+
+  presents_with:
+    label: presents with
+    domain: case
+    range: clinical_syndrome
+    inverse: presentation_of
+    description: A case has a documented clinical syndrome.
+
+  tested_by:
+    label: tested by
+    domain: specimen
+    range: assay
+    inverse: tests
+    description: A specimen is processed using a laboratory assay.
+
+  yields_result:
+    label: yields result
+    domain: assay
+    range: test_result
+    inverse: result_of
+    description: An assay produces an observed test result.
+
+  detects:
+    label: detects
+    domain: test_result
+    range: pathogen_entity
+    inverse: detected_by
+    description: A result indicates the presence of a pathogen or pathogen component.
+
+  derived_from:
+    label: derived from
+    domain: test_result
+    range: specimen
+    inverse: supports_result
+    description: A result is based on a particular specimen.
+
+  sampled_from:
+    label: sampled from
+    domain: specimen
+    range: host
+    inverse: source_of_specimen
+    description: A specimen is collected from a host.
+
+  collected_at:
+    label: collected at
+    domain: specimen
+    range: collection_site
+    inverse: collection_site_for
+    description: A specimen is collected at a geographic or environmental site.
+
+  occurred_in:
+    label: occurred in
+    domain: outbreak
+    range: geographic_location
+    inverse: location_of_outbreak
+    description: An outbreak or case cluster occurred in a location.
+
+  occurred_during:
+    label: occurred during
+    domain: outbreak
+    range: time_period
+    inverse: time_of_outbreak
+    description: An outbreak, exposure, or case occurred during a temporal interval.
+
+  belongs_to_outbreak:
+    label: belongs to outbreak
+    domain: case
+    range: outbreak
+    inverse: includes_case
+    description: A case is part of an outbreak or case cluster.
+
+  associated_with:
+    label: associated with
+    domain: epidemiological_measure
+    range: exposure
+    inverse: measured_by
+    description: An epidemiological estimate quantifies an association involving an exposure.
+
+  supports:
+    label: supports
+    domain: investigation_entity
+    range: zoonotic_spillover
+    inverse: supported_by
+    description: An observation, result, or sequence analysis provides evidence for a spillover interpretation.
+
+  prevents:
+    label: prevents or reduces
+    domain: intervention
+    range: exposure_and_transmission
+    inverse: reduced_by
+    description: An intervention is intended to prevent or reduce an exposure or transmission event.
+
+  subtype_of:
+    label: subtype of
+    domain: pathogen_entity
+    range: pathogen_entity
+    inverse: has_subtype
+    description: A taxonomic or ontology concept is a more specific type of another concept.
+
+extraction_guidance:
+  entity_mentions:
+    - Prefer the most specific available type.
+    - Preserve the exact text span as mention_text alongside the normalized entity type.
+    - Normalize spelling variants and abbreviations to canonical_name when evidence is sufficient.
+    - Do not infer infection solely from exposure; create an exposure relation unless infection is stated or supported by a result.
+    - Distinguish a reservoir host from an incidental animal host.
+    - Distinguish a specimen from the assay performed on that specimen and from the resulting observation.
+
+  relation_mentions:
+    - Attach route, time, location, and evidence attributes to the event or relation when the text provides them.
+    - Represent animal-to-human transmission as zoonotic_spillover, even when the word spillover is not explicitly used.
+    - Represent later person-to-person spread separately from the initial zoonotic_spillover.
+    - Use supports for evidence statements; use causes_infection or infects only when the text supports a biological claim.
+
+  provenance_fields:
+    - document_id
+    - section
+    - sentence_id
+    - character_start
+    - character_end
+    - mention_text
+    - confidence
