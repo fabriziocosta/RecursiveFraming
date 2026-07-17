@@ -33,7 +33,7 @@ The preferred interface is configuration-driven:
     )
     config = GraphicalizerConfig(
         provider="openai",
-        model="gpt-4o-mini",
+        model="gpt-5-nano",
         prompt_template_path="assets/prompts/graphicalizer_prompt_template.yaml",
         prompt_snapshot_path="outputs/prompts/run.yaml",
         casting_retries=1,
@@ -43,6 +43,10 @@ The preferred interface is configuration-driven:
 
 Set `provider="ollama"` and choose a locally installed model such as
 `llama3.2` to use Ollama. The Ollama server must be running locally.
+Provider-specific capacity settings are passed with `options`; for example,
+Ollama accepts `num_ctx` and `num_predict`, while OpenAI accepts
+`max_output_tokens`. The pipeline does not truncate the source text or graph
+payload before sending it.
 
 The ontology-casting pass validates every returned type against the ontology
 keys. By default, one repair attempt is made when the model emits an invalid

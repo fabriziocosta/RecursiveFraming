@@ -176,6 +176,7 @@ class OpenAISubgraphNarrator:
         prompt: Optional[SubgraphNarrativePrompt] = None,
         client: Any = None,
         prompt_snapshot_path: Optional[str | Path] = None,
+        request_options: Optional[Mapping[str, Any]] = None,
     ) -> None:
         if not model.strip():
             raise ValueError("model must not be empty.")
@@ -185,6 +186,7 @@ class OpenAISubgraphNarrator:
         self.prompt_snapshot_path = (
             Path(prompt_snapshot_path) if prompt_snapshot_path else None
         )
+        self.request_options = dict(request_options or {})
         if client is None:
             try:
                 from openai import OpenAI
@@ -209,6 +211,7 @@ class OpenAISubgraphNarrator:
             prompt=prompt,
             client=graphicalizer.llm_client.client,
             prompt_snapshot_path=prompt_snapshot_path,
+            request_options=getattr(graphicalizer.llm_client, "request_options", None),
         )
 
     @staticmethod
@@ -263,6 +266,7 @@ class OpenAISubgraphNarrator:
                 {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
             ],
             text_format=self._schema,
+            **self.request_options,
         )
         parsed = self._parsed(response)
         narrative = (parsed.narrative or "").strip()

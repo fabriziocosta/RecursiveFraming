@@ -35,7 +35,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Protocol, Seque
 
 # Cheap, fast default for early extraction experiments. Override explicitly
 # when a higher-capability model is needed.
-DEFAULT_MODEL = "gpt-4o-mini"
+DEFAULT_MODEL = "gpt-5-nano"
 DEFAULT_OLLAMA_MODEL = "llama3.2"
 
 
@@ -1228,6 +1228,7 @@ class OpenAIResponsesClient:
         prompt_snapshot_path: Optional[str | Path] = None,
         node_context_config: Optional[NodeContextConfig] = None,
         casting_retries: int = 1,
+        options: Optional[Mapping[str, Any]] = None,
     ) -> None:
         self.ontology = ontology
         self.extraction_density = extraction_density or ExtractionDensityConfig()
@@ -1235,6 +1236,7 @@ class OpenAIResponsesClient:
         if casting_retries < 0:
             raise ValueError("casting_retries must be non-negative.")
         self.casting_retries = casting_retries
+        self.request_options = dict(options or {})
         self.prompt_template = prompt
         self.model = model
         self.prompt = (
@@ -1363,6 +1365,9 @@ class OpenAIResponsesClient:
             raise LLMResponseError("OpenAI returned no parsed structured output.")
         return parsed
 
+    def _parse_response(self, **request: Any) -> Any:
+        return self.client.responses.parse(**request, **self.request_options)
+
     @staticmethod
     def _ontology_casting_from_parsed(parsed: Any) -> OntologyCasting:
         return OntologyCasting(
@@ -1398,7 +1403,7 @@ class OpenAIResponsesClient:
 
     def extract_free_graph(self, text: str) -> FreeGraphExtraction:
         extraction_request = self.extraction_density.request_payload(text)
-        response = self.client.responses.parse(
+        response = self._parse_response(
             model=self.model,
             input=[
                 {"role": "system", "content": self.prompt.free_extraction_system},
@@ -1451,7 +1456,7 @@ class OpenAIResponsesClient:
             "free_extraction": extraction.to_dict(),
             "ontology": ontology.prompt_schema(),
         }
-        response = self.client.responses.parse(
+        response = self._parse_response(
             model=self.model,
             input=[
                 {"role": "system", "content": self.prompt.ontology_casting_system},
@@ -1487,7 +1492,7 @@ class OpenAIResponsesClient:
                 "object must be ontology-labeled.\n"
                 f"Validation issues: {json.dumps(issues, ensure_ascii=False)}"
             )
-            response = self.client.responses.parse(
+            response = self._parse_response(
                 model=self.model,
                 input=[
                     {"role": "system", "content": repair_system},
@@ -1564,7 +1569,7 @@ class OpenAIResponsesClient:
             "ontology": ontology.prompt_schema(),
             "context_config": context_config.to_mapping(),
         }
-        response = self.client.responses.parse(
+        response = self._parse_response(
             model=self.model,
             input=[
                 {"role": "system", "content": self.prompt.node_context_system},
@@ -1649,6 +1654,7 @@ class LLMGraphicalizer:
                 ontology,
                 settings,
                 client=client,
+                options=options,
                 prompt_template=prompt_template,
             )
         if selected_provider == "ollama":
@@ -1710,6 +1716,7 @@ class LLMGraphicalizer:
         config: Optional[GraphicalizerConfig] = None,
         *,
         client: Any = None,
+        options: Optional[Mapping[str, Any]] = None,
         prompt_template: Optional[GraphicalizerPrompt] = None,
     ) -> "LLMGraphicalizer":
         """Build the complete pipeline from one configuration object."""
@@ -1731,6 +1738,7 @@ class LLMGraphicalizer:
             prompt_snapshot_path=settings.prompt_snapshot_path,
             node_context_config=settings.node_context,
             casting_retries=settings.casting_retries,
+            options=options,
         )
         return cls(
             llm_client=llm_client,
