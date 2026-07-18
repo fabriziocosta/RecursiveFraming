@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from graphicalizer import PubMedArticle, PubMedClient
+from graphicalizer import PubMedArticle, PubMedClient, PubMedSearchPage
 
 
 ARTICLE_XML = """<PubmedArticleSet>
@@ -77,7 +77,27 @@ class PubMedTests(unittest.TestCase):
             self.assertIn("A short abstract.", paths[0].read_text())
             self.assertTrue(manifest.exists())
 
+    def test_search_all_retrieves_pages(self):
+        calls = []
+
+        def request(endpoint, params):
+            calls.append((endpoint, dict(params)))
+            start = int(params.get("retstart", 0))
+            ids = ["101", "102"] if start == 0 else ["103"]
+            return (
+                '{"esearchresult":{"count":"3","idlist":['
+                + ",".join(f'"{item}"' for item in ids)
+                + "]}}"
+            ).encode()
+
+        self.client._request = request
+        total, ids = self.client.search_all("virus[Title/Abstract]", page_size=2)
+
+        self.assertEqual(total, 3)
+        self.assertEqual(ids, ["101", "102", "103"])
+        self.assertEqual([call[1].get("retstart", 0) for call in calls], [0, 2])
+        self.assertIsInstance(self.client.search_page("virus[Title/Abstract]"), PubMedSearchPage)
+
 
 if __name__ == "__main__":
     unittest.main()
-

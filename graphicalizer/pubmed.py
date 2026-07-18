@@ -39,6 +39,16 @@ class PubMedArticle:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class PubMedSearchPage:
+    """One paginated PubMed search response."""
+
+    query: str
+    count: int
+    retstart: int
+    ids: tuple[str, ...]
+
+
 class PubMedClient:
     """Search PubMed and fetch abstract records through NCBI E-utilities."""
 
@@ -51,6 +61,8 @@ class PubMedClient:
         base_url: str = DEFAULT_PUBMED_BASE_URL,
         timeout: float = 30.0,
         min_interval: float = 0.34,
+        retries: int = 3,
+        backoff_factor: float = 2.0,
     ) -> None:
         if not email.strip() or "@" not in email:
             raise ValueError("email must be a valid contact email for NCBI requests.")
@@ -60,12 +72,18 @@ class PubMedClient:
             raise ValueError("timeout must be positive.")
         if min_interval < 0:
             raise ValueError("min_interval must be non-negative.")
+        if retries < 1:
+            raise ValueError("retries must be at least 1.")
+        if backoff_factor < 1:
+            raise ValueError("backoff_factor must be at least 1.")
         self.email = email
         self.tool = tool
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.min_interval = min_interval
+        self.retries = retries
+        self.backoff_factor = backoff_factor
         self._last_request_at = 0.0
 
     @staticmethod
@@ -93,27 +111,67 @@ class PubMedClient:
         return f" {operator} ".join(quote(term) for term in terms)
 
     def _request(self, endpoint: str, params: Mapping[str, Any]) -> bytes:
-        wait = self.min_interval - (time.monotonic() - self._last_request_at)
-        if wait > 0:
-            time.sleep(wait)
-        query = {
-            "tool": self.tool,
-            "email": self.email,
-            **{key: value for key, value in params.items() if value is not None},
-        }
-        if self.api_key:
-            query["api_key"] = self.api_key
-        request = Request(
-            f"{self.base_url}/{endpoint}?{urlencode(query)}",
-            headers={"User-Agent": f"{self.tool}/0.1 ({self.email})"},
+        last_error: Exception | None = None
+        for attempt in range(self.retries):
+            wait = self.min_interval - (time.monotonic() - self._last_request_at)
+            if wait > 0:
+                time.sleep(wait)
+            query = {
+                "tool": self.tool,
+                "email": self.email,
+                **{key: value for key, value in params.items() if value is not None},
+            }
+            if self.api_key:
+                query["api_key"] = self.api_key
+            request = Request(
+                f"{self.base_url}/{endpoint}?{urlencode(query)}",
+                headers={"User-Agent": f"{self.tool}/0.1 ({self.email})"},
+            )
+            try:
+                with urlopen(request, timeout=self.timeout) as response:
+                    body = response.read()
+                self._last_request_at = time.monotonic()
+                return body
+            except Exception as exc:
+                last_error = exc
+                if attempt < self.retries - 1:
+                    time.sleep(self.backoff_factor**attempt)
+        raise PubMedError(f"PubMed request failed at {endpoint}: {last_error}") from last_error
+
+    def search_page(
+        self,
+        query: str,
+        *,
+        retstart: int = 0,
+        retmax: int = 1000,
+        sort: str = "relevance",
+    ) -> PubMedSearchPage:
+        """Return one page of PMIDs plus PubMed's total result count."""
+        if not query.strip():
+            raise ValueError("query must not be empty.")
+        if retstart < 0:
+            raise ValueError("retstart must be non-negative.")
+        if retmax < 1 or retmax > 10000:
+            raise ValueError("retmax must be between 1 and 10000.")
+        body = self._request(
+            "esearch.fcgi",
+            {
+                "db": "pubmed",
+                "term": query,
+                "retstart": retstart,
+                "retmax": retmax,
+                "retmode": "json",
+                "sort": sort,
+            },
         )
         try:
-            with urlopen(request, timeout=self.timeout) as response:
-                body = response.read()
-        except Exception as exc:
-            raise PubMedError(f"PubMed request failed at {endpoint}: {exc}") from exc
-        self._last_request_at = time.monotonic()
-        return body
+            data = json.loads(body.decode("utf-8"))
+            result = data["esearchresult"]
+            count = int(result["count"])
+            ids = tuple(str(pmid) for pmid in result.get("idlist", []))
+        except (ValueError, KeyError, TypeError) as exc:
+            raise PubMedError("PubMed search returned an invalid JSON response.") from exc
+        return PubMedSearchPage(query, count, retstart, ids)
 
     def search(
         self,
@@ -127,22 +185,36 @@ class PubMedClient:
             raise ValueError("query must not be empty.")
         if max_results < 1 or max_results > 10000:
             raise ValueError("max_results must be between 1 and 10000.")
-        body = self._request(
-            "esearch.fcgi",
-            {
-                "db": "pubmed",
-                "term": query,
-                "retmax": max_results,
-                "retmode": "json",
-                "sort": sort,
-            },
-        )
-        try:
-            data = json.loads(body.decode("utf-8"))
-            ids = data["esearchresult"]["idlist"]
-        except (ValueError, KeyError, TypeError) as exc:
-            raise PubMedError("PubMed search returned an invalid JSON response.") from exc
-        return [str(pmid) for pmid in ids]
+        return list(self.search_page(query, retmax=max_results, sort=sort).ids)
+
+    def search_all(
+        self,
+        query: str,
+        *,
+        max_results: int | None = None,
+        page_size: int = 1000,
+        sort: str = "relevance",
+    ) -> tuple[int, List[str]]:
+        """Retrieve all available PMIDs, or a bounded prefix, page by page."""
+        if max_results is not None and max_results < 1:
+            raise ValueError("max_results must be positive when provided.")
+        if page_size < 1 or page_size > 10000:
+            raise ValueError("page_size must be between 1 and 10000.")
+        first = self.search_page(query, retmax=min(page_size, max_results or page_size), sort=sort)
+        total = first.count
+        target = min(total, max_results) if max_results is not None else total
+        ids = list(first.ids[:target])
+        for start in range(len(ids), target, page_size):
+            page = self.search_page(
+                query,
+                retstart=start,
+                retmax=min(page_size, target - start),
+                sort=sort,
+            )
+            ids.extend(page.ids)
+            if not page.ids:
+                break
+        return total, ids[:target]
 
     def fetch(self, pmids: Sequence[str]) -> List[PubMedArticle]:
         """Fetch PubMed records for a sequence of PMIDs."""
@@ -150,7 +222,12 @@ class PubMedClient:
         if not ids:
             return []
         if len(ids) > 200:
-            raise ValueError("fetch accepts at most 200 PMIDs per request.")
+            return self.fetch_many(ids)
+        return self._fetch_batch(ids)
+
+    def _fetch_batch(self, ids: Sequence[str]) -> List[PubMedArticle]:
+        if len(ids) > 200:
+            raise ValueError("a PubMed fetch batch accepts at most 200 PMIDs.")
         body = self._request(
             "efetch.fcgi",
             {
@@ -165,6 +242,16 @@ class PubMedClient:
         except ET.ParseError as exc:
             raise PubMedError("PubMed fetch returned invalid XML.") from exc
         return [self._parse_article(node) for node in root.findall(".//PubmedArticle")]
+
+    def fetch_many(self, pmids: Sequence[str], *, batch_size: int = 200) -> List[PubMedArticle]:
+        """Fetch an arbitrary PMID collection in PubMed-sized batches."""
+        if batch_size < 1 or batch_size > 200:
+            raise ValueError("batch_size must be between 1 and 200.")
+        ids = [str(pmid).strip() for pmid in pmids if str(pmid).strip()]
+        articles: List[PubMedArticle] = []
+        for start in range(0, len(ids), batch_size):
+            articles.extend(self._fetch_batch(ids[start : start + batch_size]))
+        return articles
 
     def search_and_fetch(
         self,
@@ -320,4 +407,11 @@ class PubMedClient:
         return "\n".join(metadata) + "\n\nAbstract:\n" + article.abstract.strip() + "\n"
 
 
-__all__ = ["DEFAULT_PUBMED_BASE_URL", "DEFAULT_PUBMED_TOOL", "PubMedArticle", "PubMedClient", "PubMedError"]
+__all__ = [
+    "DEFAULT_PUBMED_BASE_URL",
+    "DEFAULT_PUBMED_TOOL",
+    "PubMedArticle",
+    "PubMedClient",
+    "PubMedError",
+    "PubMedSearchPage",
+]

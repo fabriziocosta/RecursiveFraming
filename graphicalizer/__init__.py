@@ -8,6 +8,8 @@ from .subgraphs import *
 from .subgraphs import __all__ as _SUBGRAPH_ALL
 from .pubmed import *
 from .pubmed import __all__ as _PUBMED_ALL
+from .pubmed_screening import *
+from .pubmed_screening import __all__ as _PUBMED_SCREENING_ALL
 from .ontology_assembly import *
 from .ontology_assembly import __all__ as _ONTOLOGY_ASSEMBLY_ALL
 from .embeddings import *
@@ -22,6 +24,7 @@ __all__ = [
     *_NARRATIVE_ALL,
     *_SUBGRAPH_ALL,
     *_PUBMED_ALL,
+    *_PUBMED_SCREENING_ALL,
     *_ONTOLOGY_ASSEMBLY_ALL,
     *_EMBEDDINGS_ALL,
     *_GRAPH_STORE_ALL,

@@ -97,8 +97,11 @@ system path.
 
 ## PubMed abstracts
 
-The [PubMed download notebook](notebooks/pubmed_abstract_download.ipynb) uses
-NCBI E-utilities to search by keyword phrases and save traceable abstract text
-files under `assets/abstracts/pubmed/`. Set `PUBMED_EMAIL` in the environment
-before running it; the notebook also writes a JSON manifest of the downloaded
-records.
+The [PubMed download notebook](notebooks/01_pubmed_abstract_download.ipynb) uses
+NCBI E-utilities to build a resumable pathogen/zoonosis corpus, then screens
+each candidate abstract with a pathogen-specific LLM prompt. Configure the
+pathogen aliases and keyword bundles in
+`notebooks/01_pubmed_abstract_download.ipynb`; set `PUBMED_EMAIL` and
+`OPENAI_API_KEY` before running it. Parquet checkpoints and the run manifest
+are written under `outputs/pubmed_screening/`, which is intentionally ignored
+by Git.

@@ -46,3 +46,4 @@ outputs/**/*.dot
 # Local scientific source data and persisted graph outputs
 assets/abstracts/
 outputs/graphs/
+outputs/pubmed_screening/
