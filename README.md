@@ -37,6 +37,7 @@ The preferred interface is configuration-driven:
         prompt_template_path="assets/prompts/graphicalizer_prompt_template.yaml",
         prompt_snapshot_path="outputs/prompts/run.yaml",
         casting_retries=2,
+        node_context_retries=2,
     )
     graphicalizer = LLMGraphicalizer.from_provider(ontology, config)
     result = graphicalizer.run(text)
@@ -68,7 +69,9 @@ payload before sending it.
 
 The ontology-casting pass validates every returned type against the ontology
 keys. By default, two repair attempts are made when the model emits an invalid
-casting; set `casting_retries=0` to disable repair calls.
+casting; set `casting_retries=0` to disable repair calls. The node-context pass
+also retries only omitted node IDs by default; set `node_context_retries=0` to
+disable that recovery.
 
 ## Installation
 

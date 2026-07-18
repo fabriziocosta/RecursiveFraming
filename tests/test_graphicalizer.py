@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from graphicalizer import (
@@ -9,6 +10,7 @@ from graphicalizer import (
     GraphicalizerConfig,
     LLMGraphicalizer,
     NodeContext,
+    NodeContextConfig,
     OpenAIResponsesClient,
     Ontology,
     OntologyCasting,
@@ -97,6 +99,41 @@ class RepairResponses:
 class RepairClient:
     def __init__(self):
         self.responses = RepairResponses()
+
+
+class PartialContextResponses:
+    def __init__(self):
+        self.calls = []
+
+    def parse(self, **kwargs):
+        payload = json.loads(kwargs["input"][1]["content"])
+        requested_ids = [node["id"] for node in payload["nodes"]]
+        self.calls.append(requested_ids)
+        returned_ids = requested_ids[:1] if len(self.calls) == 1 else requested_ids
+        context_type = kwargs["text_format"]
+        return type(
+            "Response",
+            (),
+            {
+                "output_parsed": context_type(
+                    contexts=[
+                        {
+                            "id": entity_id,
+                            "summary": f"Context for {entity_id}.",
+                            "evidence": [],
+                            "uncertainty": "",
+                        }
+                        for entity_id in returned_ids
+                    ],
+                    notes="",
+                )
+            },
+        )()
+
+
+class PartialContextClient:
+    def __init__(self):
+        self.responses = PartialContextResponses()
 
 
 class FakeEmbeddingModel:
@@ -208,6 +245,58 @@ class GraphicalizerTests(unittest.TestCase):
 
         self.assertEqual(casting.relations[0].ontology_type, "links")
         self.assertEqual(client.responses.calls, 2)
+
+    def test_openai_context_retries_only_omitted_nodes(self):
+        extraction = FreeGraphExtraction(
+            entities=(
+                FreeEntity("e1", "alpha", "raw"),
+                FreeEntity("e2", "beta", "raw"),
+                FreeEntity("e3", "gamma", "raw"),
+            ),
+            relations=(
+                FreeRelation("r1", "e1", "e2", "connects"),
+                FreeRelation("r2", "e2", "e3", "connects"),
+            ),
+        )
+        casting = OntologyCasting(
+            entities=tuple(
+                OntologyEntity(entity.entity_id, "thing", entity.mention_text)
+                for entity in extraction.entities
+            ),
+            relations=tuple(
+                OntologyRelation(
+                    relation.relation_id,
+                    relation.source_id,
+                    relation.target_id,
+                    "links",
+                )
+                for relation in extraction.relations
+            ),
+        )
+        client = PartialContextClient()
+        prompt = GraphicalizerPrompt.default().render(
+            self.ontology,
+            ExtractionDensityConfig(),
+            model="test-model",
+        )
+        llm_client = OpenAIResponsesClient(
+            prompt=prompt,
+            ontology=self.ontology,
+            client=client,
+            model="test-model",
+            node_context_retries=1,
+        )
+
+        contexts = llm_client.enrich_node_contexts(
+            "alpha connects beta and gamma",
+            extraction,
+            casting,
+            self.ontology,
+            NodeContextConfig(),
+        )
+
+        self.assertEqual([context.entity_id for context in contexts], ["e1", "e2", "e3"])
+        self.assertEqual(client.responses.calls, [["e1", "e2", "e3"], ["e2", "e3"]])
 
 
 if __name__ == "__main__":

@@ -42,3 +42,7 @@ outputs/*.svg
 outputs/*.png
 outputs/*.pdf
 outputs/**/*.dot
+
+# Local scientific source data and persisted graph outputs
+assets/abstracts/
+outputs/graphs/

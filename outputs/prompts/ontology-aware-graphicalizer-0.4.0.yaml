@@ -39,12 +39,14 @@ free_extraction_system: "You are a domain-independent scientific and technical i
   ,\n    \"virus_family\",\n    \"zoonotic_spillover\"\n  ],\n  \"relation_type_ids\"\
   : [\n    \"associated_with\",\n    \"belongs_to_outbreak\",\n    \"carried_by\"\
   ,\n    \"causes_infection\",\n    \"collected_at\",\n    \"consumes\",\n    \"contaminates\"\
-  ,\n    \"derived_from\",\n    \"detects\",\n    \"examines_feature\",\n    \"exposes\"\
-  ,\n    \"has_symptom\",\n    \"infects\",\n    \"maintained_in\",\n    \"occurred_during\"\
-  ,\n    \"occurred_in\",\n    \"presents_with\",\n    \"prevents\",\n    \"related_to\"\
-  ,\n    \"sampled_from\",\n    \"spills_over_from\",\n    \"subtype_of\",\n    \"\
-  supports\",\n    \"tested_by\",\n    \"transmitted_by\",\n    \"transmitted_to\"\
-  ,\n    \"yields_result\"\n  ]\n}"
+  ,\n    \"derived_from\",\n    \"detects\",\n    \"evidence_for\",\n    \"examines_feature\"\
+  ,\n    \"exposes\",\n    \"has_part\",\n    \"has_property\",\n    \"has_symptom\"\
+  ,\n    \"infects\",\n    \"influences\",\n    \"located_in\",\n    \"maintained_in\"\
+  ,\n    \"measured_by\",\n    \"occurred_during\",\n    \"occurred_in\",\n    \"\
+  part_of\",\n    \"presents_with\",\n    \"prevents\",\n    \"related_to\",\n   \
+  \ \"requires_understanding_of\",\n    \"sampled_from\",\n    \"spills_over_from\"\
+  ,\n    \"subtype_of\",\n    \"supports\",\n    \"tested_by\",\n    \"transmitted_by\"\
+  ,\n    \"transmitted_to\",\n    \"yields_result\"\n  ]\n}"
 ontology_casting_system: "You are an ontology-mapping component for a typed knowledge\
   \ graph.\nGiven the source text, a free-form extraction, and an ontology, assign\
   \ each\nextracted entity exactly one ontology entity type when justified. Assign\
@@ -402,8 +404,9 @@ ontology_casting_system: "You are an ontology-mapping component for a typed know
   ,\n      \"synonyms\": [\n        \"animal-to-human transmission\",\n        \"\
   zoonotic jump\",\n        \"cross-species transmission\"\n      ]\n    }\n  },\n\
   \  \"metadata\": {\n    \"assembly\": {\n      \"abstraction_level\": 2,\n     \
-  \ \"method\": \"download, relevance-filter, hierarchy-rank, and retain a bounded\
-  \ term catalog\",\n      \"sources\": {\n        \"envo\": {\n          \"available_terms\"\
+  \ \"generic_seed\": \"assets/ontologies/entity_ontology_generic.yaml\",\n      \"\
+  method\": \"download, relevance-filter, hierarchy-rank, and retain a bounded term\
+  \ catalog\",\n      \"sources\": {\n        \"envo\": {\n          \"available_terms\"\
   : 6936,\n          \"path\": \"assets/ontologies/external/envo.obo\",\n        \
   \  \"sha256\": \"7f5a6580d1b59166da07a54f9aa907a76f86079b7082e089192f04df91fd7d5b\"\
   ,\n          \"url\": \"https://purl.obolibrary.org/obo/envo.obo\"\n        },\n\
@@ -457,30 +460,55 @@ ontology_casting_system: "You are an ontology-mapping component for a typed know
   \      \"description\": \"A result indicates the presence of a pathogen or pathogen\
   \ component.\",\n      \"domain\": \"test_result\",\n      \"inverse\": \"detected_by\"\
   ,\n      \"label\": \"detects\",\n      \"range\": \"pathogen_entity\"\n    },\n\
-  \    \"examines_feature\": {\n      \"description\": \"An investigation, study,\
-  \ or analysis examines a biological feature.\",\n      \"domain\": \"investigation_entity\"\
-  ,\n      \"inverse\": \"feature_examined_by\",\n      \"label\": \"examines feature\"\
-  ,\n      \"range\": \"biological_feature\"\n    },\n    \"exposes\": {\n      \"\
-  description\": \"A material or source creates an exposure opportunity for a host.\"\
-  ,\n      \"domain\": \"contaminated_material\",\n      \"inverse\": \"exposed_to\"\
-  ,\n      \"label\": \"exposes\",\n      \"range\": \"host\"\n    },\n    \"has_symptom\"\
-  : {\n      \"description\": \"A host exhibits a symptom or clinical sign.\",\n \
-  \     \"domain\": \"host\",\n      \"inverse\": \"symptom_of\",\n      \"label\"\
-  : \"has symptom or sign\",\n      \"range\": \"symptom_or_sign\"\n    },\n    \"\
-  infects\": {\n      \"description\": \"A pathogen is detected in or associated with\
-  \ infection of a host.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
-  infected_by\",\n      \"label\": \"infects\",\n      \"range\": \"host\"\n    },\n\
-  \    \"maintained_in\": {\n      \"description\": \"A pathogen is maintained in\
-  \ a reservoir host population.\",\n      \"domain\": \"pathogen\",\n      \"inverse\"\
-  : \"maintains_pathogen\",\n      \"label\": \"maintained in\",\n      \"range\"\
-  : \"reservoir_host\"\n    },\n    \"occurred_during\": {\n      \"description\"\
-  : \"An outbreak, exposure, or case occurred during a temporal interval.\",\n   \
-  \   \"domain\": \"outbreak\",\n      \"inverse\": \"time_of_outbreak\",\n      \"\
-  label\": \"occurred during\",\n      \"range\": \"time_period\"\n    },\n    \"\
-  occurred_in\": {\n      \"description\": \"An outbreak or case cluster occurred\
-  \ in a location.\",\n      \"domain\": \"outbreak\",\n      \"inverse\": \"location_of_outbreak\"\
-  ,\n      \"label\": \"occurred in\",\n      \"range\": \"geographic_location\"\n\
-  \    },\n    \"presents_with\": {\n      \"description\": \"A case has a documented\
+  \    \"evidence_for\": {\n      \"description\": \"An observation, result, or analysis\
+  \ provides evidence for another entity, claim, or process.\",\n      \"domain\"\
+  : \"investigation_entity\",\n      \"inverse\": \"supported_by\",\n      \"label\"\
+  : \"evidence for\",\n      \"range\": \"investigation_entity\"\n    },\n    \"examines_feature\"\
+  : {\n      \"description\": \"An investigation, study, or analysis examines a biological\
+  \ feature.\",\n      \"domain\": \"investigation_entity\",\n      \"inverse\": \"\
+  feature_examined_by\",\n      \"label\": \"examines feature\",\n      \"range\"\
+  : \"biological_feature\"\n    },\n    \"exposes\": {\n      \"description\": \"\
+  A material or source creates an exposure opportunity for a host.\",\n      \"domain\"\
+  : \"contaminated_material\",\n      \"inverse\": \"exposed_to\",\n      \"label\"\
+  : \"exposes\",\n      \"range\": \"host\"\n    },\n    \"has_part\": {\n      \"\
+  description\": \"An entity or process contains another entity or process as a component.\"\
+  ,\n      \"domain\": \"investigation_entity\",\n      \"inverse\": \"part_of\",\n\
+  \      \"label\": \"has part\",\n      \"range\": \"investigation_entity\"\n   \
+  \ },\n    \"has_property\": {\n      \"description\": \"An entity has a biologically\
+  \ or scientifically relevant property or feature.\",\n      \"domain\": \"investigation_entity\"\
+  ,\n      \"inverse\": \"property_of\",\n      \"label\": \"has property\",\n   \
+  \   \"range\": \"biological_feature\"\n    },\n    \"has_symptom\": {\n      \"\
+  description\": \"A host exhibits a symptom or clinical sign.\",\n      \"domain\"\
+  : \"host\",\n      \"inverse\": \"symptom_of\",\n      \"label\": \"has symptom\
+  \ or sign\",\n      \"range\": \"symptom_or_sign\"\n    },\n    \"infects\": {\n\
+  \      \"description\": \"A pathogen is detected in or associated with infection\
+  \ of a host.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"infected_by\"\
+  ,\n      \"label\": \"infects\",\n      \"range\": \"host\"\n    },\n    \"influences\"\
+  : {\n      \"description\": \"An entity or process changes, affects, or contributes\
+  \ to another entity or process.\",\n      \"domain\": \"investigation_entity\",\n\
+  \      \"inverse\": \"influenced_by\",\n      \"label\": \"influences\",\n     \
+  \ \"range\": \"investigation_entity\"\n    },\n    \"located_in\": {\n      \"description\"\
+  : \"An entity, event, or observation is located in a place or setting.\",\n    \
+  \  \"domain\": \"investigation_entity\",\n      \"inverse\": \"location_of\",\n\
+  \      \"label\": \"located in\",\n      \"range\": \"investigation_entity\"\n \
+  \   },\n    \"maintained_in\": {\n      \"description\": \"A pathogen is maintained\
+  \ in a reservoir host population.\",\n      \"domain\": \"pathogen\",\n      \"\
+  inverse\": \"maintains_pathogen\",\n      \"label\": \"maintained in\",\n      \"\
+  range\": \"reservoir_host\"\n    },\n    \"measured_by\": {\n      \"description\"\
+  : \"An entity, property, or result is measured or characterized by an investigation\
+  \ or assay.\",\n      \"domain\": \"investigation_entity\",\n      \"inverse\":\
+  \ \"measures\",\n      \"label\": \"measured by\",\n      \"range\": \"investigation_entity\"\
+  \n    },\n    \"occurred_during\": {\n      \"description\": \"An outbreak, exposure,\
+  \ or case occurred during a temporal interval.\",\n      \"domain\": \"outbreak\"\
+  ,\n      \"inverse\": \"time_of_outbreak\",\n      \"label\": \"occurred during\"\
+  ,\n      \"range\": \"time_period\"\n    },\n    \"occurred_in\": {\n      \"description\"\
+  : \"An outbreak or case cluster occurred in a location.\",\n      \"domain\": \"\
+  outbreak\",\n      \"inverse\": \"location_of_outbreak\",\n      \"label\": \"occurred\
+  \ in\",\n      \"range\": \"geographic_location\"\n    },\n    \"part_of\": {\n\
+  \      \"description\": \"An entity is a component or constituent of another entity\
+  \ or process.\",\n      \"domain\": \"investigation_entity\",\n      \"inverse\"\
+  : \"has_part\",\n      \"label\": \"part of\",\n      \"range\": \"investigation_entity\"\
+  \n    },\n    \"presents_with\": {\n      \"description\": \"A case has a documented\
   \ clinical syndrome.\",\n      \"domain\": \"case\",\n      \"inverse\": \"presentation_of\"\
   ,\n      \"label\": \"presents with\",\n      \"range\": \"clinical_syndrome\"\n\
   \    },\n    \"prevents\": {\n      \"description\": \"An intervention is intended\
@@ -491,7 +519,11 @@ ontology_casting_system: "You are an ontology-mapping component for a typed know
   \ two investigation entities when no more specific relation is justified.\",\n \
   \     \"domain\": \"investigation_entity\",\n      \"inverse\": \"related_to\",\n\
   \      \"label\": \"related to\",\n      \"range\": \"investigation_entity\"\n \
-  \   },\n    \"sampled_from\": {\n      \"description\": \"A specimen is collected\
+  \   },\n    \"requires_understanding_of\": {\n      \"description\": \"An investigation,\
+  \ claim, or process requires understanding another entity or process.\",\n     \
+  \ \"domain\": \"investigation_entity\",\n      \"inverse\": \"is_required_for_understanding\"\
+  ,\n      \"label\": \"requires understanding of\",\n      \"range\": \"investigation_entity\"\
+  \n    },\n    \"sampled_from\": {\n      \"description\": \"A specimen is collected\
   \ from a host.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"source_of_specimen\"\
   ,\n      \"label\": \"sampled from\",\n      \"range\": \"host\"\n    },\n    \"\
   spills_over_from\": {\n      \"description\": \"A pathogen moves from an animal\
@@ -869,8 +901,9 @@ node_context_system: "You are a scientific context-annotation component for a ty
   ,\n      \"synonyms\": [\n        \"animal-to-human transmission\",\n        \"\
   zoonotic jump\",\n        \"cross-species transmission\"\n      ]\n    }\n  },\n\
   \  \"metadata\": {\n    \"assembly\": {\n      \"abstraction_level\": 2,\n     \
-  \ \"method\": \"download, relevance-filter, hierarchy-rank, and retain a bounded\
-  \ term catalog\",\n      \"sources\": {\n        \"envo\": {\n          \"available_terms\"\
+  \ \"generic_seed\": \"assets/ontologies/entity_ontology_generic.yaml\",\n      \"\
+  method\": \"download, relevance-filter, hierarchy-rank, and retain a bounded term\
+  \ catalog\",\n      \"sources\": {\n        \"envo\": {\n          \"available_terms\"\
   : 6936,\n          \"path\": \"assets/ontologies/external/envo.obo\",\n        \
   \  \"sha256\": \"7f5a6580d1b59166da07a54f9aa907a76f86079b7082e089192f04df91fd7d5b\"\
   ,\n          \"url\": \"https://purl.obolibrary.org/obo/envo.obo\"\n        },\n\
@@ -924,30 +957,55 @@ node_context_system: "You are a scientific context-annotation component for a ty
   \      \"description\": \"A result indicates the presence of a pathogen or pathogen\
   \ component.\",\n      \"domain\": \"test_result\",\n      \"inverse\": \"detected_by\"\
   ,\n      \"label\": \"detects\",\n      \"range\": \"pathogen_entity\"\n    },\n\
-  \    \"examines_feature\": {\n      \"description\": \"An investigation, study,\
-  \ or analysis examines a biological feature.\",\n      \"domain\": \"investigation_entity\"\
-  ,\n      \"inverse\": \"feature_examined_by\",\n      \"label\": \"examines feature\"\
-  ,\n      \"range\": \"biological_feature\"\n    },\n    \"exposes\": {\n      \"\
-  description\": \"A material or source creates an exposure opportunity for a host.\"\
-  ,\n      \"domain\": \"contaminated_material\",\n      \"inverse\": \"exposed_to\"\
-  ,\n      \"label\": \"exposes\",\n      \"range\": \"host\"\n    },\n    \"has_symptom\"\
-  : {\n      \"description\": \"A host exhibits a symptom or clinical sign.\",\n \
-  \     \"domain\": \"host\",\n      \"inverse\": \"symptom_of\",\n      \"label\"\
-  : \"has symptom or sign\",\n      \"range\": \"symptom_or_sign\"\n    },\n    \"\
-  infects\": {\n      \"description\": \"A pathogen is detected in or associated with\
-  \ infection of a host.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
-  infected_by\",\n      \"label\": \"infects\",\n      \"range\": \"host\"\n    },\n\
-  \    \"maintained_in\": {\n      \"description\": \"A pathogen is maintained in\
-  \ a reservoir host population.\",\n      \"domain\": \"pathogen\",\n      \"inverse\"\
-  : \"maintains_pathogen\",\n      \"label\": \"maintained in\",\n      \"range\"\
-  : \"reservoir_host\"\n    },\n    \"occurred_during\": {\n      \"description\"\
-  : \"An outbreak, exposure, or case occurred during a temporal interval.\",\n   \
-  \   \"domain\": \"outbreak\",\n      \"inverse\": \"time_of_outbreak\",\n      \"\
-  label\": \"occurred during\",\n      \"range\": \"time_period\"\n    },\n    \"\
-  occurred_in\": {\n      \"description\": \"An outbreak or case cluster occurred\
-  \ in a location.\",\n      \"domain\": \"outbreak\",\n      \"inverse\": \"location_of_outbreak\"\
-  ,\n      \"label\": \"occurred in\",\n      \"range\": \"geographic_location\"\n\
-  \    },\n    \"presents_with\": {\n      \"description\": \"A case has a documented\
+  \    \"evidence_for\": {\n      \"description\": \"An observation, result, or analysis\
+  \ provides evidence for another entity, claim, or process.\",\n      \"domain\"\
+  : \"investigation_entity\",\n      \"inverse\": \"supported_by\",\n      \"label\"\
+  : \"evidence for\",\n      \"range\": \"investigation_entity\"\n    },\n    \"examines_feature\"\
+  : {\n      \"description\": \"An investigation, study, or analysis examines a biological\
+  \ feature.\",\n      \"domain\": \"investigation_entity\",\n      \"inverse\": \"\
+  feature_examined_by\",\n      \"label\": \"examines feature\",\n      \"range\"\
+  : \"biological_feature\"\n    },\n    \"exposes\": {\n      \"description\": \"\
+  A material or source creates an exposure opportunity for a host.\",\n      \"domain\"\
+  : \"contaminated_material\",\n      \"inverse\": \"exposed_to\",\n      \"label\"\
+  : \"exposes\",\n      \"range\": \"host\"\n    },\n    \"has_part\": {\n      \"\
+  description\": \"An entity or process contains another entity or process as a component.\"\
+  ,\n      \"domain\": \"investigation_entity\",\n      \"inverse\": \"part_of\",\n\
+  \      \"label\": \"has part\",\n      \"range\": \"investigation_entity\"\n   \
+  \ },\n    \"has_property\": {\n      \"description\": \"An entity has a biologically\
+  \ or scientifically relevant property or feature.\",\n      \"domain\": \"investigation_entity\"\
+  ,\n      \"inverse\": \"property_of\",\n      \"label\": \"has property\",\n   \
+  \   \"range\": \"biological_feature\"\n    },\n    \"has_symptom\": {\n      \"\
+  description\": \"A host exhibits a symptom or clinical sign.\",\n      \"domain\"\
+  : \"host\",\n      \"inverse\": \"symptom_of\",\n      \"label\": \"has symptom\
+  \ or sign\",\n      \"range\": \"symptom_or_sign\"\n    },\n    \"infects\": {\n\
+  \      \"description\": \"A pathogen is detected in or associated with infection\
+  \ of a host.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"infected_by\"\
+  ,\n      \"label\": \"infects\",\n      \"range\": \"host\"\n    },\n    \"influences\"\
+  : {\n      \"description\": \"An entity or process changes, affects, or contributes\
+  \ to another entity or process.\",\n      \"domain\": \"investigation_entity\",\n\
+  \      \"inverse\": \"influenced_by\",\n      \"label\": \"influences\",\n     \
+  \ \"range\": \"investigation_entity\"\n    },\n    \"located_in\": {\n      \"description\"\
+  : \"An entity, event, or observation is located in a place or setting.\",\n    \
+  \  \"domain\": \"investigation_entity\",\n      \"inverse\": \"location_of\",\n\
+  \      \"label\": \"located in\",\n      \"range\": \"investigation_entity\"\n \
+  \   },\n    \"maintained_in\": {\n      \"description\": \"A pathogen is maintained\
+  \ in a reservoir host population.\",\n      \"domain\": \"pathogen\",\n      \"\
+  inverse\": \"maintains_pathogen\",\n      \"label\": \"maintained in\",\n      \"\
+  range\": \"reservoir_host\"\n    },\n    \"measured_by\": {\n      \"description\"\
+  : \"An entity, property, or result is measured or characterized by an investigation\
+  \ or assay.\",\n      \"domain\": \"investigation_entity\",\n      \"inverse\":\
+  \ \"measures\",\n      \"label\": \"measured by\",\n      \"range\": \"investigation_entity\"\
+  \n    },\n    \"occurred_during\": {\n      \"description\": \"An outbreak, exposure,\
+  \ or case occurred during a temporal interval.\",\n      \"domain\": \"outbreak\"\
+  ,\n      \"inverse\": \"time_of_outbreak\",\n      \"label\": \"occurred during\"\
+  ,\n      \"range\": \"time_period\"\n    },\n    \"occurred_in\": {\n      \"description\"\
+  : \"An outbreak or case cluster occurred in a location.\",\n      \"domain\": \"\
+  outbreak\",\n      \"inverse\": \"location_of_outbreak\",\n      \"label\": \"occurred\
+  \ in\",\n      \"range\": \"geographic_location\"\n    },\n    \"part_of\": {\n\
+  \      \"description\": \"An entity is a component or constituent of another entity\
+  \ or process.\",\n      \"domain\": \"investigation_entity\",\n      \"inverse\"\
+  : \"has_part\",\n      \"label\": \"part of\",\n      \"range\": \"investigation_entity\"\
+  \n    },\n    \"presents_with\": {\n      \"description\": \"A case has a documented\
   \ clinical syndrome.\",\n      \"domain\": \"case\",\n      \"inverse\": \"presentation_of\"\
   ,\n      \"label\": \"presents with\",\n      \"range\": \"clinical_syndrome\"\n\
   \    },\n    \"prevents\": {\n      \"description\": \"An intervention is intended\
@@ -958,7 +1016,11 @@ node_context_system: "You are a scientific context-annotation component for a ty
   \ two investigation entities when no more specific relation is justified.\",\n \
   \     \"domain\": \"investigation_entity\",\n      \"inverse\": \"related_to\",\n\
   \      \"label\": \"related to\",\n      \"range\": \"investigation_entity\"\n \
-  \   },\n    \"sampled_from\": {\n      \"description\": \"A specimen is collected\
+  \   },\n    \"requires_understanding_of\": {\n      \"description\": \"An investigation,\
+  \ claim, or process requires understanding another entity or process.\",\n     \
+  \ \"domain\": \"investigation_entity\",\n      \"inverse\": \"is_required_for_understanding\"\
+  ,\n      \"label\": \"requires understanding of\",\n      \"range\": \"investigation_entity\"\
+  \n    },\n    \"sampled_from\": {\n      \"description\": \"A specimen is collected\
   \ from a host.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"source_of_specimen\"\
   ,\n      \"label\": \"sampled from\",\n      \"range\": \"host\"\n    },\n    \"\
   spills_over_from\": {\n      \"description\": \"A pathogen moves from an animal\
@@ -1046,16 +1108,24 @@ render_context:
   - contaminates
   - derived_from
   - detects
+  - evidence_for
   - examines_feature
   - exposes
+  - has_part
+  - has_property
   - has_symptom
   - infects
+  - influences
+  - located_in
   - maintained_in
+  - measured_by
   - occurred_during
   - occurred_in
+  - part_of
   - presents_with
   - prevents
   - related_to
+  - requires_understanding_of
   - sampled_from
   - spills_over_from
   - subtype_of

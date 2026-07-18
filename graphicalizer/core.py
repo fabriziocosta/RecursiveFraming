@@ -962,10 +962,12 @@ class GraphicalizerPrompt:
             f"{self.node_context_system}\n\n"
             "RUNTIME NODE-CONTEXT CONFIGURATION\n"
             f"{json.dumps(context_settings.to_mapping(), ensure_ascii=False, indent=2, sort_keys=True)}\n\n"
-            "TARGET ONTOLOGY\n"
+            "TARGET ONTOLOGY IDENTIFIERS\n"
             "Use the exact ontology identifiers supplied in the graph payload; "
-            "do not introduce new entities or relations.\n"
-            f"{ontology_context}"
+            "do not introduce new entities or relations. The graph payload also "
+            "contains definitions for the ontology types used by its nodes and "
+            "relations.\n"
+            f"{ontology_id_context}"
         )
         return GraphicalizerPrompt(
             name=self.name,
@@ -1161,6 +1163,7 @@ class GraphicalizerConfig:
     max_density: float = 0.40
     max_degree_fraction: float = 0.50
     max_hub_nodes: int = 0
+    node_context_retries: int = 2
 
     def __post_init__(self) -> None:
         if self.provider not in {"openai", "ollama"}:
@@ -1175,6 +1178,8 @@ class GraphicalizerConfig:
             raise ValueError("context_policy must be either 'all_nodes' or 'disabled'.")
         if self.casting_retries < 0:
             raise ValueError("casting_retries must be non-negative.")
+        if self.node_context_retries < 0:
+            raise ValueError("node_context_retries must be non-negative.")
 
     def to_mapping(self) -> Dict[str, Any]:
         return {
@@ -1195,6 +1200,7 @@ class GraphicalizerConfig:
             "disconnected_policy": self.disconnected_policy,
             "context_policy": self.context_policy,
             "casting_retries": self.casting_retries,
+            "node_context_retries": self.node_context_retries,
             "strict_validation": self.strict_validation,
             "max_density": self.max_density,
             "max_degree_fraction": self.max_degree_fraction,
@@ -1219,6 +1225,7 @@ class GraphicalizerConfig:
             ),
             context_policy=str(data.get("context_policy", "all_nodes")),
             casting_retries=int(data.get("casting_retries", 2)),
+            node_context_retries=int(data.get("node_context_retries", 2)),
             strict_validation=bool(data.get("strict_validation", False)),
             max_density=float(data.get("max_density", 0.40)),
             max_degree_fraction=float(data.get("max_degree_fraction", 0.50)),
@@ -1247,6 +1254,7 @@ class OpenAIResponsesClient:
         node_context_config: Optional[NodeContextConfig] = None,
         casting_retries: int = 2,
         options: Optional[Mapping[str, Any]] = None,
+        node_context_retries: int = 2,
     ) -> None:
         self.ontology = ontology
         self.extraction_density = extraction_density or ExtractionDensityConfig()
@@ -1254,6 +1262,9 @@ class OpenAIResponsesClient:
         if casting_retries < 0:
             raise ValueError("casting_retries must be non-negative.")
         self.casting_retries = casting_retries
+        if node_context_retries < 0:
+            raise ValueError("node_context_retries must be non-negative.")
+        self.node_context_retries = node_context_retries
         self.request_options = dict(options or {})
         self.prompt_template = prompt
         self.model = model
@@ -1699,7 +1710,13 @@ class OpenAIResponsesClient:
         ontology: Ontology,
         context_config: NodeContextConfig,
     ) -> Tuple[NodeContext, ...]:
-        """Generate grounded context for every node in the final graph."""
+        """Generate grounded context for every node in the final graph.
+
+        Structured-output models can occasionally stop after only part of a
+        requested list. Retry only the missing nodes so the normal strict
+        validation in :class:`LLMGraphicalizer` remains intact without
+        repeating work that already succeeded.
+        """
         typed_entities = {
             entity.entity_id: entity
             for entity in casting.entities
@@ -1741,39 +1758,90 @@ class OpenAIResponsesClient:
                 }
             )
 
-        payload = {
-            "source_text": text,
-            "nodes": nodes,
-            "relations": relation_rows,
-            "ontology": ontology.prompt_schema(),
-            "context_config": context_config.to_mapping(),
+        compact_ontology = {
+            "entity_types": {
+                entity_type: ontology.entity_types[entity_type]
+                for entity_type in sorted(
+                    {
+                        node["ontology_type"]
+                        for node in nodes
+                        if node["ontology_type"] is not None
+                    }
+                )
+                if entity_type in ontology.entity_types
+            },
+            "relation_types": {
+                relation_type: ontology.relation_types[relation_type]
+                for relation_type in sorted(
+                    {
+                        row["ontology_relation"]
+                        for row in relation_rows
+                        if row["ontology_relation"] is not None
+                    }
+                )
+                if relation_type in ontology.relation_types
+            },
         }
-        response = self._parse_response(
-            model=self.model,
-            input=[
-                {"role": "system", "content": self.prompt.node_context_system},
-                {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
-            ],
-            text_format=self._node_context_schema,
-        )
-        parsed = self._parsed(response)
-        return tuple(
-            NodeContext(
-                entity_id=item.id,
-                summary=item.summary,
-                evidence=(
-                    tuple(item.evidence[: context_config.max_evidence_items])
-                    if context_config.include_evidence
-                    else ()
-                ),
-                uncertainty=(
-                    item.uncertainty or ""
-                    if context_config.include_uncertainty
-                    else ""
-                ),
+
+        def request_contexts(request_nodes: Sequence[Mapping[str, Any]]) -> Tuple[NodeContext, ...]:
+            payload = {
+                "source_text": text,
+                "nodes": list(request_nodes),
+                "relations": relation_rows,
+                "ontology": compact_ontology,
+                "context_config": context_config.to_mapping(),
+            }
+            response = self._parse_response(
+                model=self.model,
+                input=[
+                    {"role": "system", "content": self.prompt.node_context_system},
+                    {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+                ],
+                text_format=self._node_context_schema,
             )
-            for item in parsed.contexts
-        )
+            parsed = self._parsed(response)
+            return tuple(
+                NodeContext(
+                    entity_id=item.id,
+                    summary=item.summary,
+                    evidence=(
+                        tuple(item.evidence[: context_config.max_evidence_items])
+                        if context_config.include_evidence
+                        else ()
+                    ),
+                    uncertainty=(
+                        item.uncertainty or ""
+                        if context_config.include_uncertainty
+                        else ""
+                    ),
+                )
+                for item in parsed.contexts
+            )
+
+        expected_ids = tuple(entity.entity_id for entity in extraction.entities)
+        collected: list[NodeContext] = []
+        requested_nodes = nodes
+        for attempt in range(self.node_context_retries + 1):
+            returned = request_contexts(requested_nodes)
+            collected_ids = {context.entity_id for context in collected}
+            for context in returned:
+                if context.entity_id in collected_ids:
+                    raise LLMResponseError(
+                        f"Node-context pass returned duplicate entity id {context.entity_id!r}."
+                    )
+                collected.append(context)
+                collected_ids.add(context.entity_id)
+
+            missing = [
+                entity_id
+                for entity_id in expected_ids
+                if entity_id not in collected_ids
+            ]
+            if not missing or attempt == self.node_context_retries:
+                break
+            requested_nodes = [node for node in nodes if node["id"] in set(missing)]
+
+        return tuple(collected)
 
 
 class LLMGraphicalizer:
@@ -1896,6 +1964,7 @@ class LLMGraphicalizer:
             prompt_snapshot_path=settings.prompt_snapshot_path,
             node_context_config=settings.node_context,
             casting_retries=settings.casting_retries,
+            node_context_retries=settings.node_context_retries,
             host=host,
             options=options,
         )
@@ -1938,6 +2007,7 @@ class LLMGraphicalizer:
             prompt_snapshot_path=settings.prompt_snapshot_path,
             node_context_config=settings.node_context,
             casting_retries=settings.casting_retries,
+            node_context_retries=settings.node_context_retries,
             options=options,
         )
         return cls(
@@ -2451,6 +2521,7 @@ class OllamaStructuredClient(OpenAIResponsesClient):
         casting_retries: int = 2,
         host: Optional[str] = None,
         options: Optional[Mapping[str, Any]] = None,
+        node_context_retries: int = 2,
     ) -> None:
         if client is None:
             try:
@@ -2475,5 +2546,6 @@ class OllamaStructuredClient(OpenAIResponsesClient):
             prompt_snapshot_path=prompt_snapshot_path,
             node_context_config=node_context_config,
             casting_retries=casting_retries,
+            node_context_retries=node_context_retries,
         )
         self.ollama_client = raw_client

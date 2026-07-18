@@ -41,6 +41,7 @@ def process_abstract_folder(
     graph_id_prefix: str = "abstract",
     manifest_path: str | Path | None = None,
     continue_on_error: bool = True,
+    verbose: bool = True,
 ) -> BatchGraphicalizationResult:
     """Graphicalize and persist every matching abstract in a folder.
 
@@ -55,13 +56,27 @@ def process_abstract_folder(
         raise ValueError("pattern must not be empty.")
     if not graph_id_prefix.strip():
         raise ValueError("graph_id_prefix must not be empty.")
+    if not isinstance(verbose, bool):
+        raise TypeError("verbose must be a bool.")
 
     paths = tuple(sorted(path for path in folder.glob(pattern) if path.is_file()))
+    paths_to_process: Any = paths
+    if verbose:
+        try:
+            from tqdm.auto import tqdm
+        except ImportError:
+            print("Progress bar unavailable; install tqdm to enable it.")
+        else:
+            paths_to_process = tqdm(
+                paths,
+                desc="Processing abstracts",
+                unit="abstract",
+            )
     saved_paths: list[Path] = []
     failures: list[Mapping[str, str]] = []
     records: list[dict[str, Any]] = []
 
-    for index, abstract_path in enumerate(paths):
+    for index, abstract_path in enumerate(paths_to_process):
         graph_id = f"{graph_id_prefix}_{index:04d}_{abstract_path.stem}"
         record: dict[str, Any] = {
             "index": index,
