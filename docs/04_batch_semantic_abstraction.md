@@ -4,10 +4,11 @@ Source notebook: [`notebooks/04_batch_semantic_abstraction.ipynb`](../notebooks/
 
 ## Purpose
 
-This notebook applies the graphicalizer to every matching abstract in a local
-folder and saves one NetworkX graph per abstract. The loop is implemented in
-`graphicalizer.batch.process_abstract_folder`; the notebook configures the
-provider, ontology, embeddings, and batch controls, then prints a run summary.
+This notebook applies the graphicalizer to filtered rows in the canonical
+`corpus_articles.parquet` DataFrame and saves one NetworkX graph per abstract.
+The loop is implemented in `graphicalizer.batch.process_corpus_articles`; the
+notebook configures the provider, ontology, embeddings, and corpus filters,
+then prints a run summary.
 
 Use notebook 03 first when tuning prompts or inspecting a single graph. Use
 this notebook after those choices are acceptable for the full local corpus.
@@ -33,9 +34,11 @@ notebook, but the graphicalizer dependencies still need to be installed.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `ASSETS_ROOT` | `PROJECT_ROOT / "assets"` | Root for abstracts, ontology, and prompts. |
-| `ABSTRACT_FOLDER` | `assets/abstracts/pubmed` | Folder scanned for source text files. |
-| `ABSTRACT_PATTERN` | `*.txt` | Filename glob. Only matching files are processed. |
+| `ASSETS_ROOT` | `PROJECT_ROOT / "assets"` | Root for ontology and prompt assets. |
+| `CORPUS_PATH` | `outputs/pubmed_screening/corpus_articles.parquet` | Canonical PubMed corpus Parquet file. |
+| `CORPUS_PATHOGENS` | `None` | Optional list of canonical pathogen names to retain. |
+| `CORPUS_START_YEAR` | `None` | Optional inclusive publication-year lower bound. |
+| `CORPUS_END_YEAR` | `None` | Optional inclusive publication-year upper bound. |
 | `GRAPH_FOLDER` | `outputs/graphs` | Destination for serialized graph files and the manifest. |
 | `GRAPH_ID_PREFIX` | `pubmed` | Prefix used in generated graph IDs. |
 | `CONTINUE_ON_ERROR` | `True` | Continue processing later files after one file fails. |
@@ -58,33 +61,39 @@ The node-context configuration uses the library defaults. `context_policy` is
 set to `"all_nodes"`, so the run attempts to generate context for every final
 graph node.
 
+`load_corpus_articles(...)` applies the pathogen/year filters before graph
+processing and retains only rows with a non-empty abstract and successful
+PubMed fetch status. This keeps selection separate from graphicalization and
+allows the same corpus to support many filtered runs.
+
 ## File ordering and graph IDs
 
-Files are sorted deterministically before processing. For the file at sorted
-index `i`, the graph ID is:
+Rows are sorted deterministically by pathogen, publication year, and PMID by
+`load_corpus_articles`. For the row at index `i`, the graph ID is:
 
 ```text
-{GRAPH_ID_PREFIX}_{i:04d}_{source_filename_without_suffix}
+{GRAPH_ID_PREFIX}_{i:04d}_{pathogen}_{pmid}
 ```
 
-For example, the first Nipah file may become
-`pubmed_0000_pubmed_40593310_...`. Graph IDs therefore depend on the sorted
-contents of the input directory. Adding or removing a file can change the
-numeric prefix of later records; preserve the manifest if IDs are used
-downstream.
+For example, a Nipah row for PMID 40593310 may become
+`pubmed_0000_Nipah_virus_40593310`. Graph IDs depend on the filtered corpus contents and
+ordering. Adding rows or changing filters can change the numeric prefix of
+later records; preserve the manifest if IDs are used downstream.
 
 ## Batch behavior
 
-`process_abstract_folder(...)` performs the following for each matching file:
+`process_corpus_articles(...)` performs the following for each filtered row:
 
-1. Read UTF-8 text.
+1. Read the `abstract` value from the DataFrame row.
 2. Compute the source SHA-256 hash.
 3. Run `graphicalizer.run(text)`.
-4. Add batch index, graph ID, source path, and source hash to graph metadata.
+4. Add batch index, graph ID, corpus path, pathogen, PMID, publication date,
+   title, and source hash to graph metadata.
 5. Save the graph as a `.gpickle` file through `NetworkXGraphStore`.
 6. Record status, output path, node count, edge count, or failure details.
 
-The function processes files in deterministic path order. With
+The function processes rows in the order returned by
+`load_corpus_articles`. With
 `CONTINUE_ON_ERROR=True`, one bad abstract does not prevent later abstracts
 from running. With `False`, the function writes the current manifest and then
 raises at the first error.
@@ -100,7 +109,7 @@ before invoking the batch function.
 | Path | Contents |
 | --- | --- |
 | `outputs/graphs/<graph_id>.gpickle` | One serialized NetworkX graph per successful abstract. |
-| `outputs/graphs/manifest.json` | Input folder, pattern, graph folder, discovered/processed/failed counts, and per-file records. |
+| `outputs/graphs/manifest.json` | Corpus path, graph folder, discovered/processed/failed counts, and per-row records. |
 
 Each successful manifest record includes `source_sha256`, `graph_path`,
 `node_count`, and `edge_count`. Each failure includes `source_path`, `graph_id`,
@@ -117,9 +126,9 @@ The notebook prints:
 
 ## Assumptions and limitations
 
-- Every selected file is UTF-8 text and represents one abstract/document.
-- The input directory is local and intentionally outside version control.
-- Source order and filenames are meaningful enough for deterministic IDs.
+- Every selected corpus row contains one abstract/document.
+- The corpus Parquet file is local and intentionally outside version control.
+- Corpus ordering and PMIDs are stable enough for deterministic IDs within a run.
 - Every graph can fit within the provider and model context limits; the code
   does not truncate source text or graph payloads.
 - The generated graph is a model-assisted interpretation and should be
@@ -130,7 +139,7 @@ The notebook prints:
 
 ## Common failures and recovery
 
-- **No files processed:** check `ABSTRACT_FOLDER` and `ABSTRACT_PATTERN`.
+- **No files processed:** check `CORPUS_PATH` and the pathogen/year filters.
 - **One or more LLM failures:** inspect the manifest, fix credentials/model or
   prompt issues, and rerun. The batch function will attempt all files again.
 - **`LLMResponseError` or missing node IDs:** inspect the prompt snapshot and
@@ -139,7 +148,8 @@ The notebook prints:
   a smaller input folder.
 - **Provider rate limiting:** use provider-specific throttling/options or split
   the input folder into smaller runs.
-- **Corrupt graph file:** rerun the source file; `NetworkXGraphStore.save` writes
+- **Corrupt graph file:** rerun the corresponding corpus row;
+  `NetworkXGraphStore.save` writes
   through a temporary file and replaces the target only after serialization
   completes.
 

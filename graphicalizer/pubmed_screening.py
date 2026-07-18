@@ -185,6 +185,16 @@ class ScreeningRunResult:
     manifest: Mapping[str, Any]
 
 
+@dataclass(frozen=True)
+class RefinementRunResult:
+    """Outputs from the first-stage LLM relevance/refinement run."""
+
+    refined_corpus: pd.DataFrame
+    refinement: pd.DataFrame
+    failures: pd.DataFrame
+    manifest: Mapping[str, Any]
+
+
 class TerminalLLMError(RuntimeError):
     """Raised when continuing an LLM run is not useful."""
 
@@ -573,6 +583,61 @@ def collect_pubmed_corpus(
     return CorpusCollectionResult(current_corpus, search_runs, manifest)
 
 
+def load_corpus_articles(
+    corpus_path: str | Path,
+    *,
+    pathogens: Sequence[str] | None = None,
+    start_year: int | None = None,
+    end_year: int | None = None,
+    search_types: Sequence[str] | None = None,
+    require_abstract: bool = True,
+) -> pd.DataFrame:
+    """Load and filter the canonical PubMed corpus Parquet file.
+
+    Filtering happens before downstream graphicalization, so a large corpus
+    can be narrowed by pathogen, publication year, and search provenance.
+    """
+    if start_year is not None and end_year is not None and start_year > end_year:
+        raise ValueError("start_year must not be greater than end_year.")
+    source = Path(corpus_path)
+    frame = pd.read_parquet(source)
+    required = {"pathogen", "pmid", "abstract", "publication_date"}
+    missing = sorted(required - set(frame.columns))
+    if missing:
+        raise ValueError(f"Corpus Parquet is missing required columns: {', '.join(missing)}")
+
+    filtered = frame.copy()
+    if pathogens is not None:
+        wanted = {str(pathogen).strip().casefold() for pathogen in pathogens if str(pathogen).strip()}
+        filtered = filtered[filtered["pathogen"].astype(str).str.casefold().isin(wanted)]
+    years = filtered["publication_date"].map(_publication_year)
+    filtered = filtered.assign(publication_year=years)
+    if start_year is not None:
+        filtered = filtered[filtered["publication_year"].fillna(-1) >= start_year]
+    if end_year is not None:
+        filtered = filtered[filtered["publication_year"].fillna(-1) <= end_year]
+    if search_types is not None:
+        wanted_types = {str(search_type).strip() for search_type in search_types if str(search_type).strip()}
+        if not wanted_types:
+            raise ValueError("search_types must contain at least one non-empty value.")
+        def contains_search_type(value: Any) -> bool:
+            try:
+                values = json.loads(str(value))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                values = []
+            return bool(wanted_types.intersection(str(item) for item in values))
+        filtered = filtered[filtered.get("source_search_types", pd.Series("[]", index=filtered.index)).map(contains_search_type)]
+    if require_abstract:
+        filtered = filtered[
+            filtered["abstract"].fillna("").astype(str).str.strip().ne("")
+            & filtered.get("fetch_status", pd.Series("ok", index=filtered.index)).astype(str).eq("ok")
+        ]
+    return filtered.sort_values(
+        [column for column in ("pathogen", "publication_year", "pmid") if column in filtered.columns],
+        na_position="last",
+    ).reset_index(drop=True)
+
+
 SCREENING_SYSTEM_PROMPT = """
 You are a careful biomedical evidence reviewer screening one PubMed abstract for one target pathogen.
 Use only the supplied title and abstract. Do not transfer human infection, zoonosis, spillover, or
@@ -590,6 +655,25 @@ animal-infection evidence without zoonosis evidence in this abstract. Use catego
 animal/pathogen context but the evidence is indirect, mixed, or requires review. Set review_required
 when attribution is ambiguous, the target pathogen is not clearly linked to the finding, or confidence
 is below 0.75. Do not make claims about evidence outside this abstract.
+""".strip()
+
+
+REFINEMENT_SYSTEM_PROMPT = """
+You are a careful biomedical retrieval-refinement reviewer. Decide whether one PubMed abstract is
+actually about the supplied target pathogen. Use only the title and abstract. Do not transfer
+evidence from another pathogen mentioned in the same abstract, even when the other pathogen is
+related or appears in a comparison, review, background statement, or list of organisms.
+
+Return JSON with exactly these keys:
+keep (boolean), target_pathogen_supported (boolean), evidence_relevant (boolean),
+evidence_phrases (array of strings), rationale (short string), confidence (number from 0 to 1),
+review_required (boolean).
+
+Set keep=true only when the target pathogen is clearly the subject, agent, or explicitly included
+study organism and the abstract is materially relevant to the configured retrieval corpus. Set
+keep=false for incidental keyword matches, unrelated pathogens, or abstracts where attribution is
+not supported. Set review_required=true when the attribution is ambiguous or confidence is below
+0.75. A confident rejection is not review_required.
 """.strip()
 
 
@@ -636,6 +720,105 @@ def _is_terminal_llm_error(exc: Exception) -> bool:
             "request headers are too large",
         )
     )
+
+
+def build_refinement_prompt(pathogen: str, aliases: Sequence[str], title: str, abstract: str) -> str:
+    """Build the JSON payload for first-stage pathogen relevance refinement."""
+    return json.dumps(
+        {
+            "target_pathogen": pathogen,
+            "target_aliases": list(aliases),
+            "title": title,
+            "abstract": abstract or "[no abstract available]",
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
+
+
+def normalize_refinement_output(raw: Mapping[str, Any]) -> dict[str, Any]:
+    """Normalize a relevance decision and identify rows safe to retain."""
+    keep = _bool(raw.get("keep"))
+    target_supported = _bool(raw.get("target_pathogen_supported"))
+    evidence_relevant = _bool(raw.get("evidence_relevant"))
+    evidence = raw.get("evidence_phrases", [])
+    if isinstance(evidence, str):
+        evidence = [evidence]
+    evidence = [str(item).strip() for item in evidence if str(item).strip()]
+    confidence = raw.get("confidence")
+    try:
+        confidence = max(0.0, min(1.0, float(confidence)))
+    except (TypeError, ValueError):
+        confidence = None
+    review_required = _bool(raw.get("review_required"))
+    if keep and (not target_supported or not evidence_relevant or confidence is None or confidence < 0.75):
+        review_required = True
+    valid = confidence is not None
+    accepted = bool(keep and target_supported and evidence_relevant and not review_required and valid)
+    return {
+        "refinement_keep": keep,
+        "target_pathogen_supported": target_supported,
+        "evidence_relevant": evidence_relevant,
+        "evidence_phrases": evidence,
+        "rationale": str(raw.get("rationale", "")).strip(),
+        "confidence": confidence,
+        "review_required": review_required,
+        "accepted": accepted,
+        "classification_status": "classified" if valid else "invalid_response",
+    }
+
+
+def refine_abstract(
+    llm: ChatCompleter,
+    pathogen: str,
+    aliases: Sequence[str],
+    title: str,
+    abstract: str,
+    *,
+    system_prompt: str = REFINEMENT_SYSTEM_PROMPT,
+    max_tokens: int = 768,
+    retries: int = 3,
+    backoff_factor: float = 2.0,
+) -> dict[str, Any]:
+    """Refine one candidate abstract with bounded retry/backoff."""
+    if retries < 1:
+        raise ValueError("retries must be at least 1.")
+    if backoff_factor < 1:
+        raise ValueError("backoff_factor must be at least 1.")
+    last_error: Exception | None = None
+    for attempt in range(retries):
+        try:
+            raw = llm.complete(
+                build_refinement_prompt(pathogen, aliases, title, abstract),
+                system_prompt=system_prompt,
+                max_tokens=max_tokens,
+                temperature=0,
+            )
+            return {
+                **normalize_refinement_output(_json_object(raw)),
+                "attempt_count": attempt + 1,
+            }
+        except KeyboardInterrupt:
+            raise
+        except Exception as exc:
+            if _is_terminal_llm_error(exc):
+                raise TerminalLLMError(str(exc)) from exc
+            last_error = exc
+            if attempt < retries - 1:
+                time.sleep(backoff_factor**attempt)
+    return {
+        "refinement_keep": False,
+        "target_pathogen_supported": False,
+        "evidence_relevant": False,
+        "evidence_phrases": [],
+        "rationale": f"LLM failure: {last_error}",
+        "confidence": None,
+        "review_required": True,
+        "accepted": False,
+        "classification_status": "failed",
+        "last_error": f"{type(last_error).__name__}: {last_error}",
+        "attempt_count": retries,
+    }
 
 
 def normalize_screening_output(raw: Mapping[str, Any]) -> dict[str, Any]:
@@ -869,6 +1052,229 @@ def screen_pubmed_corpus(
     return ScreeningRunResult(screening, failures, screening_manifest)
 
 
+def refine_pubmed_corpus(
+    corpus: pd.DataFrame | str | Path,
+    pathogens: Mapping[str, Sequence[str]] | Sequence[PathogenSpec],
+    llm: ChatCompleter,
+    output_dir: str | Path,
+    *,
+    model: str = "unknown",
+    system_prompt: str = REFINEMENT_SYSTEM_PROMPT,
+    max_tokens: int = 768,
+    retries: int = 3,
+    max_llm_calls: int | None = None,
+    save_every: int = 10,
+    resume: bool = True,
+    retry_failed: bool = False,
+    verbose: bool = True,
+) -> RefinementRunResult:
+    """Keep only LLM-confirmed target-pathogen abstracts for stage two."""
+    specs = normalize_pathogens(pathogens)
+    aliases = {spec.name: spec.all_terms() for spec in specs}
+    corpus_df = pd.read_parquet(corpus) if isinstance(corpus, (str, Path)) else corpus.copy()
+    required = {"pathogen", "pmid", "title", "abstract", "fetch_status", "publication_date"}
+    missing = required - set(corpus_df.columns)
+    if missing:
+        raise KeyError(f"corpus is missing required columns: {sorted(missing)}")
+    output = Path(output_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    corpus_identity = [
+        {
+            "pathogen": str(row.pathogen),
+            "pmid": str(row.pmid),
+            "abstract_sha256": hashlib.sha256(str(row.abstract or "").encode("utf-8")).hexdigest(),
+        }
+        for row in corpus_df.itertuples(index=False)
+    ]
+    prompt_hash = hashlib.sha256(system_prompt.encode("utf-8")).hexdigest()
+    refinement_hash = _stable_hash(
+        {
+            "corpus_identity": corpus_identity,
+            "model": model,
+            "prompt_hash": prompt_hash,
+            "max_tokens": max_tokens,
+        }
+    )
+    refinement_path = output / "llm_refinement.parquet"
+    failures_path = output / "refinement_failures.parquet"
+    refined_path = output / "refined_corpus_articles.parquet"
+    manifest_path = output / "run_manifest.json"
+    if not resume:
+        for path in (refinement_path, failures_path, refined_path):
+            path.unlink(missing_ok=True)
+
+    existing = _read_parquet(refinement_path) if resume else pd.DataFrame()
+    current_existing = (
+        existing[_where(existing, "refinement_hash", refinement_hash)].copy()
+        if not existing.empty
+        else pd.DataFrame()
+    )
+    done_keys: set[tuple[str, str]] = set()
+    if not current_existing.empty and "classification_status" in current_existing:
+        for row in current_existing.itertuples(index=False):
+            if row.classification_status == "classified" or (
+                not retry_failed and row.classification_status in {"failed", "invalid_response"}
+            ):
+                done_keys.add((str(row.pathogen), str(row.pmid)))
+    pending = corpus_df[
+        (corpus_df["fetch_status"] == "ok")
+        & corpus_df["abstract"].fillna("").astype(str).str.strip().ne("")
+    ].copy()
+    pending = pending[
+        ~pending.apply(
+            lambda row: (str(row.pathogen), str(row.pmid)) in done_keys,
+            axis=1,
+        )
+    ]
+    calls = 0
+    updates: list[dict[str, Any]] = []
+    started = datetime.now(timezone.utc).isoformat()
+    try:
+        for row in pending.itertuples(index=False):
+            if max_llm_calls is not None and calls >= max_llm_calls:
+                break
+            spec_aliases = aliases.get(str(row.pathogen), (str(row.pathogen),))
+            stop_after = False
+            try:
+                verdict = refine_abstract(
+                    llm,
+                    str(row.pathogen),
+                    spec_aliases,
+                    str(row.title or ""),
+                    str(row.abstract or ""),
+                    system_prompt=system_prompt,
+                    max_tokens=max_tokens,
+                    retries=retries,
+                )
+            except TerminalLLMError as exc:
+                verdict = {
+                    "refinement_keep": False,
+                    "target_pathogen_supported": False,
+                    "evidence_relevant": False,
+                    "evidence_phrases": [],
+                    "rationale": f"Terminal LLM failure: {exc}",
+                    "confidence": None,
+                    "review_required": True,
+                    "accepted": False,
+                    "classification_status": "terminal_failure",
+                    "last_error": f"{type(exc).__name__}: {exc}",
+                    "attempt_count": 1,
+                }
+                stop_after = True
+            calls += 1
+            updates.append(
+                {
+                    "refinement_hash": refinement_hash,
+                    "corpus_config_hash": str(getattr(row, "config_hash", "")),
+                    "pathogen": str(row.pathogen),
+                    "pmid": str(row.pmid),
+                    "title": str(row.title or ""),
+                    "abstract": str(row.abstract or ""),
+                    "publication_date": str(row.publication_date or ""),
+                    "model": model,
+                    "prompt_hash": prompt_hash,
+                    "refined_at": datetime.now(timezone.utc).isoformat(),
+                    **verdict,
+                }
+            )
+            if verbose:
+                print(f"Refined {calls}/{len(pending)}: {row.pathogen} / PMID {row.pmid}")
+            if len(updates) >= max(1, save_every):
+                _merge_checkpoint(
+                    refinement_path,
+                    pd.DataFrame(updates),
+                    ["refinement_hash", "pathogen", "pmid"],
+                )
+                updates.clear()
+            if stop_after:
+                break
+    except KeyboardInterrupt:
+        raise
+    finally:
+        if updates:
+            _merge_checkpoint(
+                refinement_path,
+                pd.DataFrame(updates),
+                ["refinement_hash", "pathogen", "pmid"],
+            )
+
+    refinement = _read_parquet(refinement_path)
+    current_refinement = refinement[_where(refinement, "refinement_hash", refinement_hash)].copy()
+    failures = current_refinement[
+        current_refinement["classification_status"].isin(
+            ["failed", "invalid_response", "terminal_failure"]
+        )
+    ].copy() if not current_refinement.empty else pd.DataFrame()
+    if not failures.empty:
+        _atomic_write_parquet(failures, failures_path)
+    else:
+        failures_path.unlink(missing_ok=True)
+
+    accepted = current_refinement[
+        (current_refinement["classification_status"] == "classified")
+        & current_refinement["accepted"].fillna(False).astype(bool)
+    ].copy() if not current_refinement.empty else pd.DataFrame()
+    decision_columns = [
+        "pathogen",
+        "pmid",
+        "refinement_hash",
+        "refinement_keep",
+        "target_pathogen_supported",
+        "evidence_relevant",
+        "evidence_phrases",
+        "rationale",
+        "confidence",
+        "review_required",
+        "accepted",
+        "model",
+        "prompt_hash",
+        "refined_at",
+    ]
+    decision_columns = [column for column in decision_columns if column in accepted.columns]
+    if accepted.empty:
+        refined_corpus = corpus_df.iloc[0:0].copy()
+    else:
+        refined_corpus = corpus_df.merge(
+            accepted[decision_columns],
+            on=["pathogen", "pmid"],
+            how="inner",
+            suffixes=("", "_refinement"),
+        )
+    _atomic_write_parquet(refined_corpus, refined_path)
+
+    refinement_manifest = {
+        "run_type": "pubmed_pathogen_retrieval_refinement",
+        "refinement_hash": refinement_hash,
+        "model": model,
+        "prompt_hash": prompt_hash,
+        "started_at": started,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "corpus_rows": int(len(corpus_df)),
+        "candidate_rows": int(len(pending)),
+        "llm_calls": calls,
+        "accepted_rows": int(len(refined_corpus)),
+        "rejected_rows": int(
+            ((current_refinement["classification_status"] == "classified")
+             & ~current_refinement["accepted"].fillna(False).astype(bool)).sum()
+        ) if not current_refinement.empty else 0,
+        "failed_rows": int(len(failures)),
+        "paths": {
+            "refinement": str(refinement_path),
+            "failures": str(failures_path),
+            "refined_corpus": str(refined_path),
+        },
+    }
+    manifest: dict[str, Any] = {}
+    if manifest_path.exists():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            manifest = {}
+    manifest["refinement"] = refinement_manifest
+    _write_json(manifest_path, manifest)
+    return RefinementRunResult(refined_corpus, refinement, failures, refinement_manifest)
+
+
 def _publication_year(value: Any) -> int | None:
     match = re.search(r"(\d{4})", str(value or ""))
     return int(match.group(1)) if match else None
@@ -894,11 +1300,22 @@ def derive_category_counts(screening: pd.DataFrame, output_dir: str | Path | Non
         )
         timeline = pd.DataFrame(columns=["pathogen", "first_confirmed_zoonosis_year"])
         counts = pd.DataFrame(columns=["pathogen", "publication_year", "category", "count"])
+        pathogen_table = pd.DataFrame(
+            columns=[
+                "pathogen",
+                "category_1_count",
+                "category_2_count",
+                "category_3_count",
+                "total_counted",
+                "first_confirmed_zoonosis_year",
+            ]
+        )
         if output_dir is not None:
             output = Path(output_dir)
             _atomic_write_parquet(work, output / "llm_screening_with_categories.parquet")
             _atomic_write_parquet(timeline, output / "zoonosis_timeline.parquet")
             _atomic_write_parquet(counts, output / "category_counts.parquet")
+            _atomic_write_parquet(pathogen_table, output / "pathogen_category_table.parquet")
         return work, timeline, counts
     work["publication_year"] = work["publication_year"].map(_publication_year)
     valid = work[
@@ -947,11 +1364,53 @@ def derive_category_counts(screening: pd.DataFrame, output_dir: str | Path | Non
     totals = counted.groupby(["pathogen", "final_category"], as_index=False).size().rename(columns={"size": "count", "final_category": "category"})
     totals["publication_year"] = pd.NA
     counts = pd.concat([totals[yearly.columns], yearly], ignore_index=True) if not yearly.empty else totals
+    pathogens = pd.DataFrame({"pathogen": sorted(work["pathogen"].dropna().astype(str).unique())})
+    if counted.empty:
+        pathogen_table = pathogens.copy()
+        for category in (CATEGORY_1, CATEGORY_2, CATEGORY_3):
+            pathogen_table[f"category_{category}_count"] = 0
+        pathogen_table["total_counted"] = 0
+    else:
+        category_pivot = (
+            counted.assign(counted_value=1)
+            .pivot_table(
+                index="pathogen",
+                columns="final_category",
+                values="counted_value",
+                aggfunc="sum",
+                fill_value=0,
+            )
+            .rename(columns={
+                CATEGORY_1: "category_1_count",
+                CATEGORY_2: "category_2_count",
+                CATEGORY_3: "category_3_count",
+            })
+            .reset_index()
+        )
+        pathogen_table = pathogens.merge(category_pivot, on="pathogen", how="left")
+        for category in (CATEGORY_1, CATEGORY_2, CATEGORY_3):
+            column = f"category_{category}_count"
+            if column not in pathogen_table:
+                pathogen_table[column] = 0
+        pathogen_table["total_counted"] = pathogen_table[
+            ["category_1_count", "category_2_count", "category_3_count"]
+        ].sum(axis=1)
+    pathogen_table = pathogen_table.merge(timeline, on="pathogen", how="left")
+    count_columns = [
+        "pathogen",
+        "category_1_count",
+        "category_2_count",
+        "category_3_count",
+        "total_counted",
+        "first_confirmed_zoonosis_year",
+    ]
+    pathogen_table = pathogen_table[count_columns]
     if output_dir is not None:
         output = Path(output_dir)
         _atomic_write_parquet(work, output / "llm_screening_with_categories.parquet")
         _atomic_write_parquet(timeline, output / "zoonosis_timeline.parquet")
         _atomic_write_parquet(counts, output / "category_counts.parquet")
+        _atomic_write_parquet(pathogen_table, output / "pathogen_category_table.parquet")
         manifest_path = output / "run_manifest.json"
         manifest: dict[str, Any] = {}
         if manifest_path.exists():
@@ -963,6 +1422,7 @@ def derive_category_counts(screening: pd.DataFrame, output_dir: str | Path | Non
             "counted_rows": int(len(counted)),
             "category_counts": counts.to_dict(orient="records"),
             "timeline_rows": timeline.to_dict(orient="records"),
+            "pathogen_category_table": pathogen_table.to_dict(orient="records"),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
         _write_json(manifest_path, manifest)
@@ -975,22 +1435,29 @@ __all__ = [
     "CATEGORY_3",
     "DEFAULT_ANIMAL_TERMS",
     "DEFAULT_ZOONOSIS_TERMS",
+    "REFINEMENT_SYSTEM_PROMPT",
     "SCREENING_SYSTEM_PROMPT",
     "ChatCompleter",
     "CorpusCollectionResult",
     "OpenAIChatCompleter",
     "PathogenSpec",
+    "RefinementRunResult",
     "SearchBundle",
     "ScreeningRunResult",
     "TerminalLLMError",
     "build_pathogen_search_query",
+    "build_refinement_prompt",
     "build_screening_prompt",
     "classify_abstract",
     "collect_pubmed_corpus",
     "derive_category_counts",
+    "load_corpus_articles",
     "normalize_pathogens",
+    "normalize_refinement_output",
     "normalize_search_bundles",
     "normalize_screening_output",
     "load_search_bundle",
     "screen_pubmed_corpus",
+    "refine_abstract",
+    "refine_pubmed_corpus",
 ]

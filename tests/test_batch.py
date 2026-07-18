@@ -4,8 +4,9 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import networkx as nx
+import pandas as pd
 
-from graphicalizer import NetworkXGraphStore, process_abstract_folder
+from graphicalizer import NetworkXGraphStore, process_abstract_folder, process_corpus_articles
 
 
 class FakeGraphicalizer:
@@ -57,6 +58,42 @@ class BatchTests(unittest.TestCase):
                     store,
                     continue_on_error=False,
                 )
+
+    def test_processes_filtered_corpus_rows_and_preserves_provenance(self):
+        frame = pd.DataFrame(
+            [
+                {
+                    "pathogen": "Nipah virus",
+                    "pmid": "101",
+                    "title": "First study",
+                    "abstract": "First abstract",
+                    "publication_date": "2020",
+                },
+                {
+                    "pathogen": "Nipah virus",
+                    "pmid": "102",
+                    "title": "Second study",
+                    "abstract": "Second abstract",
+                    "publication_date": "2021",
+                },
+            ]
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            store = NetworkXGraphStore(Path(directory) / "graphs")
+            result = process_corpus_articles(
+                frame,
+                FakeGraphicalizer(),
+                store,
+                corpus_path=Path(directory) / "corpus_articles.parquet",
+                verbose=False,
+            )
+
+            self.assertEqual(result.discovered, 2)
+            self.assertEqual(result.processed, 2)
+            graph = store.load("pubmed_0000_Nipah_virus_101")
+            self.assertEqual(graph.graph["pathogen"], "Nipah virus")
+            self.assertEqual(graph.graph["pmid"], "101")
+            self.assertEqual(graph.graph["publication_date"], "2020")
 
 
 if __name__ == "__main__":

@@ -4,8 +4,8 @@ Source notebook: [`notebooks/03_semantic_abstraction.ipynb`](../notebooks/03_sem
 
 ## Purpose
 
-This is the interactive, single-document experiment. It loads one local PubMed
-abstract, extracts a free graph, casts it into the microbiology ontology,
+This is the interactive, single-document experiment. It loads one row from the
+canonical PubMed corpus Parquet file, extracts a free graph, casts it into the microbiology ontology,
 generates grounded node context, attaches embeddings to node summaries, saves
 the graph, renders it, samples a connected subgraph, and asks the LLM to write
 a short scientific narrative for that subgraph.
@@ -25,10 +25,10 @@ For OpenAI, set `OPENAI_API_KEY`. For Ollama, run the local Ollama service and
 make the selected model available. Graph rendering requires either the native
 Graphviz `dot` executable or the project's supported Python fallback binding.
 
-The notebook expects at least one local text file under
-`assets/abstracts/pubmed/`. These abstracts are local source data and are
-ignored by Git. Notebook 01 can be used to create a screening corpus, but this
-notebook currently reads the `.txt` files rather than Parquet rows.
+The notebook expects `outputs/pubmed_screening/corpus_articles.parquet`, which
+is produced by notebook 01 and ignored by Git. The Parquet file contains one
+deduplicated row per `(pathogen, PMID)` and is now the canonical abstract store
+for downstream graphicalization.
 
 ## Input selection and paths
 
@@ -36,17 +36,22 @@ notebook currently reads the `.txt` files rather than Parquet rows.
 | --- | --- | --- |
 | `PROJECT_ROOT` | Repository root discovered from `assets` | Root used to resolve all relative paths. |
 | `ASSETS_ROOT` | `PROJECT_ROOT / "assets"` | Input asset directory. |
-| `PUBMED_ABSTRACT_INDEX` | `0` | Zero-based index into the sorted `*.txt` abstract paths. |
-| `ABSTRACT_PATH` | Derived | Selected source text file. |
+| `CORPUS_PATH` | `outputs/pubmed_screening/corpus_articles.parquet` | Canonical PubMed corpus Parquet file. |
+| `CORPUS_PATHOGENS` | `None` | Optional list of canonical pathogen names to retain. |
+| `CORPUS_START_YEAR` | `None` | Optional inclusive publication-year lower bound. |
+| `CORPUS_END_YEAR` | `None` | Optional inclusive publication-year upper bound. |
+| `PUBMED_ABSTRACT_INDEX` | `0` | Zero-based index into the filtered corpus rows. |
+| `ABSTRACT_REF` | Derived | Stable `pathogen/PMID` reference for the selected row. |
 | `ASSEMBLED_ONTOLOGY_PATH` | `assets/ontologies/entity_ontology_microbiology_assembled.yaml` | Preferred ontology. |
 | `ONTOLOGY_PATH` | Base ontology fallback | Uses `entity_ontology_microbiology.yaml` when the assembled ontology is absent. |
 | `PROMPT_PATH` | `assets/prompts/graphicalizer_prompt_template.yaml` | Graphicalizer prompt template. |
 | `PROMPT_SNAPSHOT_PATH` | `outputs/prompts/ontology-aware-graphicalizer-0.4.0.yaml` | Runtime prompt snapshot for provenance. |
-| `GRAPH_OUTPUT_PATH` | `outputs/nipah_ontology_graph.svg` | Rendered full-graph SVG. |
+| `GRAPH_OUTPUT_PATH` | `outputs/selected_ontology_graph.svg` | Rendered full-graph SVG. |
 
-The selected abstract is based on sorted filesystem paths, not on PMID order or
-metadata. Adding/removing a local file can therefore change the index. For a
-stable experiment, record the selected path and source SHA-256 printed by the
+The selected abstract is based on the deterministic order returned by
+`load_corpus_articles`, not on filesystem paths. Changing filters or adding
+new corpus rows can change the index. For a stable experiment, record the
+corpus path, filters, selected pathogen/PMID, and source SHA-256 printed by the
 notebook.
 
 ## LLM and embedding parameters
@@ -117,7 +122,8 @@ repaired before it becomes the final graph.
 ## Persisting and loading the graph
 
 The graph is saved through `NetworkXGraphStore` in `outputs/graphs` with ID
-`pubmed_<index>`, for example `pubmed_0000.gpickle`. The store writes via a
+`pubmed_<pathogen>_<PMID>`, for example `pubmed_Nipah_virus_19751584.gpickle`.
+The store writes via a
 temporary file and replacement. Graph files use Python pickle because node
 attributes include mappings, provenance, and vectors; only load graph files
 from trusted locations.
@@ -132,7 +138,7 @@ node and edge counts.
 | --- | ---: | --- |
 | `SUBGRAPH_NODE_COUNT` | `3` | Number of nodes requested in the connected sample. |
 | `SUBGRAPH_SEED` | `None` | Random seed. Set an integer for reproducible sampling. |
-| `SUBGRAPH_OUTPUT_PATH` | `outputs/nipah_random_subgraph.svg` | Rendered subgraph SVG. |
+| `SUBGRAPH_OUTPUT_PATH` | `outputs/selected_random_subgraph.svg` | Rendered subgraph SVG. |
 | `NARRATIVE_WORDS` | `100` | Approximate target length for the narrative. |
 | `NARRATIVE_PROMPT_PATH` | `assets/prompts/subgraph_narrative_prompt_template.yaml` | Narrative prompt template. |
 | `NARRATIVE_SNAPSHOT_PATH` | `outputs/prompts/subgraph-narrator-0.1.0.yaml` | Rendered prompt snapshot. |
@@ -145,8 +151,8 @@ subgraph is ambiguous.
 
 ## Assumptions and limitations
 
-- Local abstract files are UTF-8 text and contain enough scientific context for
-  extraction.
+- Corpus rows contain UTF-8-compatible abstract text and enough scientific
+  context for extraction.
 - The ontology identifiers and prompt template are compatible.
 - LLM output is probabilistic; record model, prompt snapshot, source hash, and
   configuration when comparing runs.
@@ -158,8 +164,9 @@ subgraph is ambiguous.
 
 ## Common failures
 
-- **No abstracts found:** populate `assets/abstracts/pubmed/` or correct the
-  project root/current working directory.
+- **No corpus rows found:** run notebook 01 to create
+  `outputs/pubmed_screening/corpus_articles.parquet`, then check the corpus
+  filters and current working directory.
 - **Missing assembled ontology:** run notebook 02, or allow the documented base
   ontology fallback.
 - **Provider authentication failure:** set `OPENAI_API_KEY` or switch to a

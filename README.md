@@ -18,7 +18,7 @@ More broadly, this work introduces a computational view of scientific discovery 
 
 Reusable inputs live under the assets directory:
 
-- assets/abstracts/ — source scientific texts
+- outputs/pubmed_screening/ — canonical PubMed corpus and screening checkpoints
 - assets/ontologies/ — entity and relation ontologies
 - assets/prompts/ — versioned prompt templates
 
@@ -97,9 +97,11 @@ system path.
 
 ## PubMed abstracts
 
-The [PubMed download notebook](notebooks/01_pubmed_abstract_download.ipynb) uses
-NCBI E-utilities to build a resumable pathogen/zoonosis corpus, then screens
-each candidate abstract with a pathogen-specific LLM prompt. Configure the
+The [PubMed collection notebook](notebooks/01_pubmed_abstract_download.ipynb)
+uses NCBI E-utilities to build a resumable pathogen/zoonosis corpus, then
+refines target-pathogen attribution with an LLM. The
+[category notebook](notebooks/01b_pubmed_pathogen_category.ipynb) classifies
+the accepted corpus and writes pathogen-level category tables. Configure the
 pathogen aliases in the notebook and edit the reusable search bundles under
 `assets/search_bundles/`; set `PUBMED_EMAIL` and
 `OPENAI_API_KEY` before running it. Parquet checkpoints and the run manifest
