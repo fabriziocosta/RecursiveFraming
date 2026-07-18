@@ -99,6 +99,13 @@ class RepairClient:
         self.responses = RepairResponses()
 
 
+class FakeEmbeddingModel:
+    model_name = "test-embeddings"
+
+    def encode(self, texts):
+        return [[3.0, 4.0] for _ in texts]
+
+
 class GraphicalizerTests(unittest.TestCase):
     def setUp(self):
         self.ontology = Ontology(
@@ -140,6 +147,23 @@ class GraphicalizerTests(unittest.TestCase):
         self.assertEqual(result.normalized_graph.number_of_edges(), 2)
         self.assertEqual(len(result.node_contexts), 2)
         self.assertIn("links", graph_to_dot(result.typed_graph))
+
+    def test_embedding_model_is_explicitly_injected_at_graphicalizer_init(self):
+        extraction = FreeGraphExtraction(
+            entities=(
+                FreeEntity("e1", "alpha", "raw"),
+                FreeEntity("e2", "beta", "raw"),
+            ),
+            relations=(FreeRelation("r1", "e1", "e2", "links"),),
+        )
+        result = LLMGraphicalizer(
+            FakeClient(extraction),
+            self.ontology,
+            embedding_model=FakeEmbeddingModel(),
+        ).run("alpha and beta")
+
+        self.assertEqual(result.graph.nodes["e1"]["node_context_embedding"], [0.6, 0.8])
+        self.assertEqual(result.graph.graph["node_context_embeddings"]["model"], "test-embeddings")
 
     def test_largest_component_is_reported(self):
         extraction = FreeGraphExtraction(

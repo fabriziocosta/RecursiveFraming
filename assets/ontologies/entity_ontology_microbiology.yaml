@@ -497,6 +497,13 @@ relation_types:
     inverse: feature_examined_by
     description: An investigation, study, or analysis examines a biological feature.
 
+  related_to:
+    label: related to
+    domain: investigation_entity
+    range: investigation_entity
+    inverse: related_to
+    description: A general evidence-grounded relation between two investigation entities when no more specific relation is justified.
+
   prevents:
     label: prevents or reduces
     domain: intervention

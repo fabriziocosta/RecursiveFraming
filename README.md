@@ -41,6 +41,24 @@ The preferred interface is configuration-driven:
     graphicalizer = LLMGraphicalizer.from_provider(ontology, config)
     result = graphicalizer.run(text)
 
+To attach vectors for each node's generated `node_context.summary`, inject an
+embedding model explicitly and save the final NetworkX graph as one file:
+
+    from sentence_transformers import SentenceTransformer
+    from graphicalizer import NetworkXGraphStore, NodeEmbeddingConfig
+
+    embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    graphicalizer = LLMGraphicalizer.from_provider(
+        ontology,
+        config,
+        embedding_model=embedding_model,
+        embedding_config=NodeEmbeddingConfig(model_id="all-MiniLM-L6-v2"),
+    )
+    result = graphicalizer.run(text)
+    store = NetworkXGraphStore("outputs/graphs")
+    store.save(result.graph, "article-001")
+    graph = store.load("article-001")
+
 Set `provider="ollama"` and choose a locally installed model such as
 `llama3.2` to use Ollama. The Ollama server must be running locally.
 Provider-specific capacity settings are passed with `options`; for example,
@@ -66,6 +84,10 @@ Install the provider extra you intend to use:
 For graph rendering through the Python fallback binding:
 
     python -m pip install -e ".[render]"
+
+For the SentenceTransformers example above:
+
+    python -m pip install -e ".[embeddings]"
 
 Native Graphviz rendering also requires the Graphviz dot executable on the
 system path.

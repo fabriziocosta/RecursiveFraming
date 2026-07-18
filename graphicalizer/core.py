@@ -33,6 +33,8 @@ import subprocess
 from types import SimpleNamespace
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Protocol, Sequence, Tuple
 
+from .embeddings import NodeContextEmbedder, NodeEmbeddingConfig
+
 
 # Cheap, fast default for early extraction experiments. Override explicitly
 # when a higher-capability model is needed.
@@ -1417,6 +1419,79 @@ class OpenAIResponsesClient:
             notes=parsed.notes or "",
         )
 
+    @staticmethod
+    def _fallback_unknown_casting_types(
+        casting: OntologyCasting,
+        ontology: Ontology,
+    ) -> OntologyCasting:
+        """Keep a graph usable when the model invents a final type.
+
+        Repair prompts normally correct unknown types. This final guard keeps a
+        grounded graph from failing solely because a model emitted a novel
+        label: the original proposal is preserved in an attribute.
+        """
+        fallback_entity = (
+            "investigation_entity"
+            if "investigation_entity" in ontology.entity_types
+            else next(iter(ontology.entity_types), None)
+        )
+        fallback_relation = (
+            "related_to"
+            if "related_to" in ontology.relation_types
+            else next(iter(ontology.relation_types), None)
+        )
+        entities = []
+        changed = False
+        for entity in casting.entities:
+            if entity.ontology_type in ontology.entity_types:
+                entities.append(entity)
+                continue
+            attributes = dict(entity.attributes)
+            attributes.setdefault(
+                "unmapped_ontology_type",
+                str(entity.ontology_type or ""),
+            )
+            entities.append(
+                OntologyEntity(
+                    entity_id=entity.entity_id,
+                    ontology_type=fallback_entity,
+                    canonical_name=entity.canonical_name,
+                    attributes=attributes,
+                    confidence=entity.confidence,
+                )
+            )
+            changed = True
+        relations = []
+        for relation in casting.relations:
+            if relation.ontology_type in ontology.relation_types:
+                relations.append(relation)
+                continue
+            attributes = dict(relation.attributes)
+            attributes.setdefault(
+                "unmapped_ontology_type",
+                str(relation.ontology_type or ""),
+            )
+            relations.append(
+                OntologyRelation(
+                    relation_id=relation.relation_id,
+                    source_id=relation.source_id,
+                    target_id=relation.target_id,
+                    ontology_type=fallback_relation,
+                    attributes=attributes,
+                    confidence=relation.confidence,
+                )
+            )
+            changed = True
+        if not changed:
+            return casting
+        note = casting.notes.strip()
+        fallback_note = "Applied safe fallback type(s) for unmapped model labels."
+        return OntologyCasting(
+            entities=tuple(entities),
+            relations=tuple(relations),
+            notes=f"{note} {fallback_note}".strip(),
+        )
+
     def _free_graph_from_parsed(self, parsed: Any) -> FreeGraphExtraction:
         return FreeGraphExtraction(
             entities=tuple(
@@ -1585,7 +1660,8 @@ class OpenAIResponsesClient:
                 "The previous casting violated the ontology contract. Return a "
                 "complete replacement, preserving every id and endpoint. Correct "
                 "all listed issues. Use only exact keys from ontology.entity_types "
-                "and ontology.relation_types; never use inverse values or free-form "
+                "and ontology.relation_types; use related_to when no specific "
+                "relation is justified; never use inverse values or free-form "
                 "labels. Do not return null ontology types because every graph "
                 "object must be ontology-labeled. Return exactly one entity casting "
                 "for every required_entity_id and exactly one relation casting for "
@@ -1611,6 +1687,8 @@ class OpenAIResponsesClient:
                 ontology,
                 require_types=True,
             )
+        if issues:
+            casting = self._fallback_unknown_casting_types(casting, ontology)
         return casting
 
     def enrich_node_contexts(
@@ -1714,6 +1792,9 @@ class LLMGraphicalizer:
         ontology: Ontology,
         llm_client: StructuredLLMClient,
         config: Optional[GraphicalizerConfig] = None,
+        *,
+        embedding_model: Any = None,
+        embedding_config: Optional[NodeEmbeddingConfig] = None,
     ) -> "LLMGraphicalizer":
         """Build the orchestrator around any StructuredLLMClient implementation."""
         settings = config or GraphicalizerConfig()
@@ -1729,6 +1810,8 @@ class LLMGraphicalizer:
             disconnected_policy=settings.disconnected_policy,
             node_context_config=settings.node_context,
             context_policy=settings.context_policy,
+            embedding_model=embedding_model,
+            embedding_config=embedding_config,
         )
 
     @classmethod
@@ -1742,6 +1825,8 @@ class LLMGraphicalizer:
         host: Optional[str] = None,
         options: Optional[Mapping[str, Any]] = None,
         prompt_template: Optional[GraphicalizerPrompt] = None,
+        embedding_model: Any = None,
+        embedding_config: Optional[NodeEmbeddingConfig] = None,
     ) -> "LLMGraphicalizer":
         """Construct the graphicalizer using the selected LLM provider."""
         selected_provider = provider or (config.provider if config is not None else "openai")
@@ -1757,6 +1842,8 @@ class LLMGraphicalizer:
                 client=client,
                 options=options,
                 prompt_template=prompt_template,
+                embedding_model=embedding_model,
+                embedding_config=embedding_config,
             )
         if selected_provider == "ollama":
             return cls.from_ollama(
@@ -1766,6 +1853,8 @@ class LLMGraphicalizer:
                 host=host,
                 options=options,
                 prompt_template=prompt_template,
+                embedding_model=embedding_model,
+                embedding_config=embedding_config,
             )
         raise ValueError(
             "Unsupported LLM provider "
@@ -1782,6 +1871,8 @@ class LLMGraphicalizer:
         host: Optional[str] = None,
         options: Optional[Mapping[str, Any]] = None,
         prompt_template: Optional[GraphicalizerPrompt] = None,
+        embedding_model: Any = None,
+        embedding_config: Optional[NodeEmbeddingConfig] = None,
     ) -> "LLMGraphicalizer":
         """Build the pipeline against a local Ollama chat server."""
         settings = config or GraphicalizerConfig(
@@ -1808,7 +1899,13 @@ class LLMGraphicalizer:
             host=host,
             options=options,
         )
-        return cls.from_llm_client(ontology, llm_client, settings)
+        return cls.from_llm_client(
+            ontology,
+            llm_client,
+            settings,
+            embedding_model=embedding_model,
+            embedding_config=embedding_config,
+        )
 
     @classmethod
     def from_openai(
@@ -1819,6 +1916,8 @@ class LLMGraphicalizer:
         client: Any = None,
         options: Optional[Mapping[str, Any]] = None,
         prompt_template: Optional[GraphicalizerPrompt] = None,
+        embedding_model: Any = None,
+        embedding_config: Optional[NodeEmbeddingConfig] = None,
     ) -> "LLMGraphicalizer":
         """Build the complete pipeline from one configuration object."""
         settings = config or GraphicalizerConfig()
@@ -1853,6 +1952,8 @@ class LLMGraphicalizer:
             disconnected_policy=settings.disconnected_policy,
             node_context_config=settings.node_context,
             context_policy=settings.context_policy,
+            embedding_model=embedding_model,
+            embedding_config=embedding_config,
         )
 
     def __init__(
@@ -1866,6 +1967,8 @@ class LLMGraphicalizer:
         disconnected_policy: str = "largest_component",
         node_context_config: Optional[NodeContextConfig] = None,
         context_policy: str = "per_node",
+        embedding_model: Any = None,
+        embedding_config: Optional[NodeEmbeddingConfig] = None,
     ) -> None:
         valid_policies = {"largest_component", "raise", "preserve"}
         if disconnected_policy not in valid_policies:
@@ -1877,6 +1980,11 @@ class LLMGraphicalizer:
             context_policy = "disabled"
         if context_policy not in {"all_nodes", "disabled"}:
             raise ValueError("context_policy must be either 'all_nodes' or 'disabled'.")
+        if embedding_model is not None and context_policy != "all_nodes":
+            raise ValueError(
+                "embedding_model requires context_policy='all_nodes' so every "
+                "node has a node_context.summary to embed."
+            )
         self.llm_client = llm_client
         self.ontology = ontology
         self.graph_builder = graph_builder or NetworkXGraphBuilder()
@@ -1885,6 +1993,11 @@ class LLMGraphicalizer:
         self.disconnected_policy = disconnected_policy
         self.node_context_config = node_context_config or NodeContextConfig()
         self.context_policy = context_policy
+        self.node_embedder = (
+            NodeContextEmbedder(embedding_model, embedding_config)
+            if embedding_model is not None
+            else None
+        )
 
     @staticmethod
     def _validate_node_contexts(
@@ -2106,6 +2219,9 @@ class LLMGraphicalizer:
         else:
             node_contexts = ()
 
+        if self.node_embedder is not None:
+            self.node_embedder.enrich_graph(graph, node_contexts)
+
         prompt = getattr(self.llm_client, "prompt", None)
         run_metadata = {
             "provider": getattr(self.llm_client, "provider", None),
@@ -2122,7 +2238,13 @@ class LLMGraphicalizer:
                 if prompt is not None
                 else None
             ),
+            "node_context_embeddings": (
+                graph.graph.get("node_context_embeddings")
+                if self.node_embedder is not None
+                else None
+            ),
         }
+        graph.graph["run_metadata"] = dict(run_metadata)
         return GraphicalizationResult(
             raw_extraction=raw_extraction,
             normalized_extraction=normalized_extraction,
@@ -2175,7 +2297,8 @@ extracted entity exactly one ontology entity type when justified. Assign each
 extracted relation exactly one ontology relation type when justified. Use the
 exact dictionary keys under entity_types and relation_types as ontology_type
 values; never use a label, synonym, inverse value, description, or free-form
-relation name. Preserve all entity ids, relation ids, and endpoints. Every
+relation name. If no specific relation is justified, use `related_to` rather
+than inventing a relation type. Preserve all entity ids, relation ids, and endpoints. Every
 returned graph object must have one exact ontology type because untyped objects
 cannot enter the final graph. Do not add entities or relations and do not alter
 the graph topology. Keep canonical names close to the wording supported by the

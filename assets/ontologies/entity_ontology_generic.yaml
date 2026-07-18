@@ -1,0 +1,70 @@
+ontology:
+  id: generic-graph-seed
+  label: Generic graph ontology seed
+  version: 0.1.0
+  language: en
+  description: Generic evidence-grounded relation vocabulary retained across domain-specific ontology assemblies.
+
+relation_types:
+  related_to:
+    label: related to
+    domain: investigation_entity
+    range: investigation_entity
+    inverse: related_to
+    description: A general evidence-grounded relation when no more specific relation is justified.
+
+  influences:
+    label: influences
+    domain: investigation_entity
+    range: investigation_entity
+    inverse: influenced_by
+    description: An entity or process changes, affects, or contributes to another entity or process.
+
+  requires_understanding_of:
+    label: requires understanding of
+    domain: investigation_entity
+    range: investigation_entity
+    inverse: is_required_for_understanding
+    description: An investigation, claim, or process requires understanding another entity or process.
+
+  part_of:
+    label: part of
+    domain: investigation_entity
+    range: investigation_entity
+    inverse: has_part
+    description: An entity is a component or constituent of another entity or process.
+
+  has_part:
+    label: has part
+    domain: investigation_entity
+    range: investigation_entity
+    inverse: part_of
+    description: An entity or process contains another entity or process as a component.
+
+  located_in:
+    label: located in
+    domain: investigation_entity
+    range: investigation_entity
+    inverse: location_of
+    description: An entity, event, or observation is located in a place or setting.
+
+  has_property:
+    label: has property
+    domain: investigation_entity
+    range: biological_feature
+    inverse: property_of
+    description: An entity has a biologically or scientifically relevant property or feature.
+
+  measured_by:
+    label: measured by
+    domain: investigation_entity
+    range: investigation_entity
+    inverse: measures
+    description: An entity, property, or result is measured or characterized by an investigation or assay.
+
+  evidence_for:
+    label: evidence for
+    domain: investigation_entity
+    range: investigation_entity
+    inverse: supported_by
+    description: An observation, result, or analysis provides evidence for another entity, claim, or process.

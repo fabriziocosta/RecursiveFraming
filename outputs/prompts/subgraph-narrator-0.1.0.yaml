@@ -435,33 +435,37 @@ system: "You are a scientific narrative component. Given a connected graph subst
   \ to prevent or reduce an exposure or transmission event.\",\n      \"domain\":\
   \ \"intervention\",\n      \"inverse\": \"reduced_by\",\n      \"label\": \"prevents\
   \ or reduces\",\n      \"range\": \"exposure_and_transmission\"\n    },\n    \"\
-  sampled_from\": {\n      \"description\": \"A specimen is collected from a host.\"\
-  ,\n      \"domain\": \"specimen\",\n      \"inverse\": \"source_of_specimen\",\n\
-  \      \"label\": \"sampled from\",\n      \"range\": \"host\"\n    },\n    \"spills_over_from\"\
-  : {\n      \"description\": \"A pathogen moves from an animal host or animal-associated\
-  \ source into humans.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
-  source_of_zoonotic_spillover\",\n      \"label\": \"spills over from\",\n      \"\
-  range\": \"animal_host\"\n    },\n    \"subtype_of\": {\n      \"description\":\
-  \ \"A taxonomic or ontology concept is a more specific type of another concept.\"\
-  ,\n      \"domain\": \"pathogen_entity\",\n      \"inverse\": \"has_subtype\",\n\
-  \      \"label\": \"subtype of\",\n      \"range\": \"pathogen_entity\"\n    },\n\
-  \    \"supports\": {\n      \"description\": \"An observation, result, or sequence\
-  \ analysis provides evidence for a spillover interpretation.\",\n      \"domain\"\
-  : \"investigation_entity\",\n      \"inverse\": \"supported_by\",\n      \"label\"\
-  : \"supports\",\n      \"range\": \"zoonotic_spillover\"\n    },\n    \"tested_by\"\
-  : {\n      \"description\": \"A specimen is processed using a laboratory assay.\"\
-  ,\n      \"domain\": \"specimen\",\n      \"inverse\": \"tests\",\n      \"label\"\
-  : \"tested by\",\n      \"range\": \"assay\"\n    },\n    \"transmitted_by\": {\n\
-  \      \"description\": \"A pathogen uses a specified transmission route.\",\n \
-  \     \"domain\": \"pathogen\",\n      \"inverse\": \"transmits_pathogen\",\n  \
-  \    \"label\": \"transmitted by\",\n      \"range\": \"transmission_route\"\n \
-  \   },\n    \"transmitted_to\": {\n      \"description\": \"A pathogen is transmitted\
-  \ to a recipient host.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
-  acquires_from\",\n      \"label\": \"transmitted to\",\n      \"range\": \"host\"\
-  \n    },\n    \"yields_result\": {\n      \"description\": \"An assay produces an\
-  \ observed test result.\",\n      \"domain\": \"assay\",\n      \"inverse\": \"\
-  result_of\",\n      \"label\": \"yields result\",\n      \"range\": \"test_result\"\
-  \n    }\n  }\n}"
+  related_to\": {\n      \"description\": \"A general evidence-grounded relation between\
+  \ two investigation entities when no more specific relation is justified.\",\n \
+  \     \"domain\": \"investigation_entity\",\n      \"inverse\": \"related_to\",\n\
+  \      \"label\": \"related to\",\n      \"range\": \"investigation_entity\"\n \
+  \   },\n    \"sampled_from\": {\n      \"description\": \"A specimen is collected\
+  \ from a host.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"source_of_specimen\"\
+  ,\n      \"label\": \"sampled from\",\n      \"range\": \"host\"\n    },\n    \"\
+  spills_over_from\": {\n      \"description\": \"A pathogen moves from an animal\
+  \ host or animal-associated source into humans.\",\n      \"domain\": \"pathogen\"\
+  ,\n      \"inverse\": \"source_of_zoonotic_spillover\",\n      \"label\": \"spills\
+  \ over from\",\n      \"range\": \"animal_host\"\n    },\n    \"subtype_of\": {\n\
+  \      \"description\": \"A taxonomic or ontology concept is a more specific type\
+  \ of another concept.\",\n      \"domain\": \"pathogen_entity\",\n      \"inverse\"\
+  : \"has_subtype\",\n      \"label\": \"subtype of\",\n      \"range\": \"pathogen_entity\"\
+  \n    },\n    \"supports\": {\n      \"description\": \"An observation, result,\
+  \ or sequence analysis provides evidence for a spillover interpretation.\",\n  \
+  \    \"domain\": \"investigation_entity\",\n      \"inverse\": \"supported_by\"\
+  ,\n      \"label\": \"supports\",\n      \"range\": \"zoonotic_spillover\"\n   \
+  \ },\n    \"tested_by\": {\n      \"description\": \"A specimen is processed using\
+  \ a laboratory assay.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"\
+  tests\",\n      \"label\": \"tested by\",\n      \"range\": \"assay\"\n    },\n\
+  \    \"transmitted_by\": {\n      \"description\": \"A pathogen uses a specified\
+  \ transmission route.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
+  transmits_pathogen\",\n      \"label\": \"transmitted by\",\n      \"range\": \"\
+  transmission_route\"\n    },\n    \"transmitted_to\": {\n      \"description\":\
+  \ \"A pathogen is transmitted to a recipient host.\",\n      \"domain\": \"pathogen\"\
+  ,\n      \"inverse\": \"acquires_from\",\n      \"label\": \"transmitted to\",\n\
+  \      \"range\": \"host\"\n    },\n    \"yields_result\": {\n      \"description\"\
+  : \"An assay produces an observed test result.\",\n      \"domain\": \"assay\",\n\
+  \      \"inverse\": \"result_of\",\n      \"label\": \"yields result\",\n      \"\
+  range\": \"test_result\"\n    }\n  }\n}"
 rendered: true
 render_context:
   template_name: subgraph-narrator

@@ -10,5 +10,17 @@ from .pubmed import *
 from .pubmed import __all__ as _PUBMED_ALL
 from .ontology_assembly import *
 from .ontology_assembly import __all__ as _ONTOLOGY_ASSEMBLY_ALL
+from .embeddings import *
+from .embeddings import __all__ as _EMBEDDINGS_ALL
+from .graph_store import *
+from .graph_store import __all__ as _GRAPH_STORE_ALL
 
-__all__ = [*_CORE_ALL, *_NARRATIVE_ALL, *_SUBGRAPH_ALL, *_PUBMED_ALL, *_ONTOLOGY_ASSEMBLY_ALL]
+__all__ = [
+    *_CORE_ALL,
+    *_NARRATIVE_ALL,
+    *_SUBGRAPH_ALL,
+    *_PUBMED_ALL,
+    *_ONTOLOGY_ASSEMBLY_ALL,
+    *_EMBEDDINGS_ALL,
+    *_GRAPH_STORE_ALL,
+]

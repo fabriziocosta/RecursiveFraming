@@ -41,50 +41,51 @@ free_extraction_system: "You are a domain-independent scientific and technical i
   ,\n    \"causes_infection\",\n    \"collected_at\",\n    \"consumes\",\n    \"contaminates\"\
   ,\n    \"derived_from\",\n    \"detects\",\n    \"examines_feature\",\n    \"exposes\"\
   ,\n    \"has_symptom\",\n    \"infects\",\n    \"maintained_in\",\n    \"occurred_during\"\
-  ,\n    \"occurred_in\",\n    \"presents_with\",\n    \"prevents\",\n    \"sampled_from\"\
-  ,\n    \"spills_over_from\",\n    \"subtype_of\",\n    \"supports\",\n    \"tested_by\"\
-  ,\n    \"transmitted_by\",\n    \"transmitted_to\",\n    \"yields_result\"\n  ]\n\
-  }"
+  ,\n    \"occurred_in\",\n    \"presents_with\",\n    \"prevents\",\n    \"related_to\"\
+  ,\n    \"sampled_from\",\n    \"spills_over_from\",\n    \"subtype_of\",\n    \"\
+  supports\",\n    \"tested_by\",\n    \"transmitted_by\",\n    \"transmitted_to\"\
+  ,\n    \"yields_result\"\n  ]\n}"
 ontology_casting_system: "You are an ontology-mapping component for a typed knowledge\
   \ graph.\nGiven the source text, a free-form extraction, and an ontology, assign\
   \ each\nextracted entity exactly one ontology entity type when justified. Assign\
   \ each\nextracted relation exactly one ontology relation type when justified. Use\
   \ the\nexact dictionary keys under entity_types and relation_types as ontology_type\n\
   values; never use a label, synonym, inverse value, description, or free-form\nrelation\
-  \ name. Preserve all entity ids, relation ids, and endpoints. Every\nreturned graph\
-  \ object must have one exact ontology type, because untyped\nobjects cannot enter\
-  \ the final graph. Do not add entities or relations and do\nnot alter the graph\
-  \ topology. Return exactly one casting for every supplied\nentity and relation id;\
-  \ never omit an item. Keep canonical names close to the\nwording supported by the\
-  \ text, and place specific details in attributes.\n\n\nRUNTIME EXTRACTION DENSITY\
-  \ REFERENCE\nThe first pass was configured with these approximate targets. Do not\
-  \ add or remove graph objects during casting:\n{\n  \"density_retries\": 2,\n  \"\
-  entities_per_word\": 0.05,\n  \"minimum_entity_fraction\": 0.75,\n  \"relations_per_entity\"\
-  : 1.5\n}\n\nTARGET ONTOLOGY\nUse only the exact dictionary keys under entity_types\
-  \ and relation_types as ontology_type values. Never use a label, synonym, inverse\
-  \ value, description, or free-form relation name as an ontology_type. Every non-null\
-  \ type must match one of those keys exactly:\n{\n  \"entity_types\": {\n    \"animal_host\"\
-  : {\n      \"attributes\": [\n        \"species\",\n        \"common_name\",\n \
-  \       \"life_stage\",\n        \"sex\",\n        \"domestic_status\"\n      ],\n\
-  \      \"description\": \"A non-human animal considered in relation to infection,\
-  \ carriage, exposure, or transmission.\",\n      \"label\": \"Animal host\",\n \
-  \     \"parent\": \"host\",\n      \"synonyms\": [\n        \"animal\",\n      \
-  \  \"non-human host\"\n      ]\n    },\n    \"animal_population\": {\n      \"attributes\"\
-  : [\n        \"species\",\n        \"population_name\",\n        \"location\",\n\
-  \        \"size\"\n      ],\n      \"description\": \"A geographically or biologically\
-  \ defined group of non-human animals.\",\n      \"label\": \"Animal population\"\
-  ,\n      \"parent\": \"biological_host\",\n      \"synonyms\": [\n        \"wildlife\
-  \ population\",\n        \"livestock population\",\n        \"animal group\"\n \
-  \     ]\n    },\n    \"assay\": {\n      \"attributes\": [\n        \"assay_name\"\
-  ,\n        \"target\",\n        \"platform\",\n        \"sensitivity\",\n      \
-  \  \"specificity\"\n      ],\n      \"description\": \"A laboratory procedure used\
-  \ to detect, identify, quantify, or characterize a pathogen or immune response.\"\
-  ,\n      \"examples\": [\n        \"reverse-transcription polymerase chain reaction\"\
-  ,\n        \"enzyme-linked immunosorbent assay\"\n      ],\n      \"label\": \"\
-  Laboratory assay\",\n      \"parent\": \"investigation_entity\",\n      \"reference_terms\"\
-  : [\n        {\n          \"id\": \"genepio:OBI:0000070\",\n          \"label\"\
-  : \"assay\"\n        },\n        {\n          \"id\": \"genepio:OBI:0600047\",\n\
-  \          \"label\": \"sequencing assay\"\n        }\n      ],\n      \"synonyms\"\
+  \ name. If no specific relation is justified, use `related_to` rather\nthan inventing\
+  \ a relation type. Preserve all entity ids, relation ids, and endpoints. Every\n\
+  returned graph object must have one exact ontology type, because untyped\nobjects\
+  \ cannot enter the final graph. Do not add entities or relations and do\nnot alter\
+  \ the graph topology. Return exactly one casting for every supplied\nentity and\
+  \ relation id; never omit an item. Keep canonical names close to the\nwording supported\
+  \ by the text, and place specific details in attributes.\n\n\nRUNTIME EXTRACTION\
+  \ DENSITY REFERENCE\nThe first pass was configured with these approximate targets.\
+  \ Do not add or remove graph objects during casting:\n{\n  \"density_retries\":\
+  \ 2,\n  \"entities_per_word\": 0.05,\n  \"minimum_entity_fraction\": 0.75,\n  \"\
+  relations_per_entity\": 1.5\n}\n\nTARGET ONTOLOGY\nUse only the exact dictionary\
+  \ keys under entity_types and relation_types as ontology_type values. Never use\
+  \ a label, synonym, inverse value, description, or free-form relation name as an\
+  \ ontology_type. Every non-null type must match one of those keys exactly:\n{\n\
+  \  \"entity_types\": {\n    \"animal_host\": {\n      \"attributes\": [\n      \
+  \  \"species\",\n        \"common_name\",\n        \"life_stage\",\n        \"sex\"\
+  ,\n        \"domestic_status\"\n      ],\n      \"description\": \"A non-human animal\
+  \ considered in relation to infection, carriage, exposure, or transmission.\",\n\
+  \      \"label\": \"Animal host\",\n      \"parent\": \"host\",\n      \"synonyms\"\
+  : [\n        \"animal\",\n        \"non-human host\"\n      ]\n    },\n    \"animal_population\"\
+  : {\n      \"attributes\": [\n        \"species\",\n        \"population_name\"\
+  ,\n        \"location\",\n        \"size\"\n      ],\n      \"description\": \"\
+  A geographically or biologically defined group of non-human animals.\",\n      \"\
+  label\": \"Animal population\",\n      \"parent\": \"biological_host\",\n      \"\
+  synonyms\": [\n        \"wildlife population\",\n        \"livestock population\"\
+  ,\n        \"animal group\"\n      ]\n    },\n    \"assay\": {\n      \"attributes\"\
+  : [\n        \"assay_name\",\n        \"target\",\n        \"platform\",\n     \
+  \   \"sensitivity\",\n        \"specificity\"\n      ],\n      \"description\":\
+  \ \"A laboratory procedure used to detect, identify, quantify, or characterize a\
+  \ pathogen or immune response.\",\n      \"examples\": [\n        \"reverse-transcription\
+  \ polymerase chain reaction\",\n        \"enzyme-linked immunosorbent assay\"\n\
+  \      ],\n      \"label\": \"Laboratory assay\",\n      \"parent\": \"investigation_entity\"\
+  ,\n      \"reference_terms\": [\n        {\n          \"id\": \"genepio:OBI:0000070\"\
+  ,\n          \"label\": \"assay\"\n        },\n        {\n          \"id\": \"genepio:OBI:0600047\"\
+  ,\n          \"label\": \"sequencing assay\"\n        }\n      ],\n      \"synonyms\"\
   : [\n        \"test\",\n        \"laboratory test\",\n        \"diagnostic assay\"\
   \n      ]\n    },\n    \"bacterial_pathogen\": {\n      \"attributes\": [\n    \
   \    \"canonical_name\",\n        \"species\",\n        \"strain\",\n        \"\
@@ -486,33 +487,37 @@ ontology_casting_system: "You are an ontology-mapping component for a typed know
   \ to prevent or reduce an exposure or transmission event.\",\n      \"domain\":\
   \ \"intervention\",\n      \"inverse\": \"reduced_by\",\n      \"label\": \"prevents\
   \ or reduces\",\n      \"range\": \"exposure_and_transmission\"\n    },\n    \"\
-  sampled_from\": {\n      \"description\": \"A specimen is collected from a host.\"\
-  ,\n      \"domain\": \"specimen\",\n      \"inverse\": \"source_of_specimen\",\n\
-  \      \"label\": \"sampled from\",\n      \"range\": \"host\"\n    },\n    \"spills_over_from\"\
-  : {\n      \"description\": \"A pathogen moves from an animal host or animal-associated\
-  \ source into humans.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
-  source_of_zoonotic_spillover\",\n      \"label\": \"spills over from\",\n      \"\
-  range\": \"animal_host\"\n    },\n    \"subtype_of\": {\n      \"description\":\
-  \ \"A taxonomic or ontology concept is a more specific type of another concept.\"\
-  ,\n      \"domain\": \"pathogen_entity\",\n      \"inverse\": \"has_subtype\",\n\
-  \      \"label\": \"subtype of\",\n      \"range\": \"pathogen_entity\"\n    },\n\
-  \    \"supports\": {\n      \"description\": \"An observation, result, or sequence\
-  \ analysis provides evidence for a spillover interpretation.\",\n      \"domain\"\
-  : \"investigation_entity\",\n      \"inverse\": \"supported_by\",\n      \"label\"\
-  : \"supports\",\n      \"range\": \"zoonotic_spillover\"\n    },\n    \"tested_by\"\
-  : {\n      \"description\": \"A specimen is processed using a laboratory assay.\"\
-  ,\n      \"domain\": \"specimen\",\n      \"inverse\": \"tests\",\n      \"label\"\
-  : \"tested by\",\n      \"range\": \"assay\"\n    },\n    \"transmitted_by\": {\n\
-  \      \"description\": \"A pathogen uses a specified transmission route.\",\n \
-  \     \"domain\": \"pathogen\",\n      \"inverse\": \"transmits_pathogen\",\n  \
-  \    \"label\": \"transmitted by\",\n      \"range\": \"transmission_route\"\n \
-  \   },\n    \"transmitted_to\": {\n      \"description\": \"A pathogen is transmitted\
-  \ to a recipient host.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
-  acquires_from\",\n      \"label\": \"transmitted to\",\n      \"range\": \"host\"\
-  \n    },\n    \"yields_result\": {\n      \"description\": \"An assay produces an\
-  \ observed test result.\",\n      \"domain\": \"assay\",\n      \"inverse\": \"\
-  result_of\",\n      \"label\": \"yields result\",\n      \"range\": \"test_result\"\
-  \n    }\n  }\n}"
+  related_to\": {\n      \"description\": \"A general evidence-grounded relation between\
+  \ two investigation entities when no more specific relation is justified.\",\n \
+  \     \"domain\": \"investigation_entity\",\n      \"inverse\": \"related_to\",\n\
+  \      \"label\": \"related to\",\n      \"range\": \"investigation_entity\"\n \
+  \   },\n    \"sampled_from\": {\n      \"description\": \"A specimen is collected\
+  \ from a host.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"source_of_specimen\"\
+  ,\n      \"label\": \"sampled from\",\n      \"range\": \"host\"\n    },\n    \"\
+  spills_over_from\": {\n      \"description\": \"A pathogen moves from an animal\
+  \ host or animal-associated source into humans.\",\n      \"domain\": \"pathogen\"\
+  ,\n      \"inverse\": \"source_of_zoonotic_spillover\",\n      \"label\": \"spills\
+  \ over from\",\n      \"range\": \"animal_host\"\n    },\n    \"subtype_of\": {\n\
+  \      \"description\": \"A taxonomic or ontology concept is a more specific type\
+  \ of another concept.\",\n      \"domain\": \"pathogen_entity\",\n      \"inverse\"\
+  : \"has_subtype\",\n      \"label\": \"subtype of\",\n      \"range\": \"pathogen_entity\"\
+  \n    },\n    \"supports\": {\n      \"description\": \"An observation, result,\
+  \ or sequence analysis provides evidence for a spillover interpretation.\",\n  \
+  \    \"domain\": \"investigation_entity\",\n      \"inverse\": \"supported_by\"\
+  ,\n      \"label\": \"supports\",\n      \"range\": \"zoonotic_spillover\"\n   \
+  \ },\n    \"tested_by\": {\n      \"description\": \"A specimen is processed using\
+  \ a laboratory assay.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"\
+  tests\",\n      \"label\": \"tested by\",\n      \"range\": \"assay\"\n    },\n\
+  \    \"transmitted_by\": {\n      \"description\": \"A pathogen uses a specified\
+  \ transmission route.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
+  transmits_pathogen\",\n      \"label\": \"transmitted by\",\n      \"range\": \"\
+  transmission_route\"\n    },\n    \"transmitted_to\": {\n      \"description\":\
+  \ \"A pathogen is transmitted to a recipient host.\",\n      \"domain\": \"pathogen\"\
+  ,\n      \"inverse\": \"acquires_from\",\n      \"label\": \"transmitted to\",\n\
+  \      \"range\": \"host\"\n    },\n    \"yields_result\": {\n      \"description\"\
+  : \"An assay produces an observed test result.\",\n      \"domain\": \"assay\",\n\
+  \      \"inverse\": \"result_of\",\n      \"label\": \"yields result\",\n      \"\
+  range\": \"test_result\"\n    }\n  }\n}"
 node_context_system: "You are a scientific context-annotation component for a typed\
   \ knowledge graph.\nFor every supplied graph node, write a concise explanation grounded\
   \ only in the\nsource abstract. Explain what the entity is in this abstract and\
@@ -949,33 +954,37 @@ node_context_system: "You are a scientific context-annotation component for a ty
   \ to prevent or reduce an exposure or transmission event.\",\n      \"domain\":\
   \ \"intervention\",\n      \"inverse\": \"reduced_by\",\n      \"label\": \"prevents\
   \ or reduces\",\n      \"range\": \"exposure_and_transmission\"\n    },\n    \"\
-  sampled_from\": {\n      \"description\": \"A specimen is collected from a host.\"\
-  ,\n      \"domain\": \"specimen\",\n      \"inverse\": \"source_of_specimen\",\n\
-  \      \"label\": \"sampled from\",\n      \"range\": \"host\"\n    },\n    \"spills_over_from\"\
-  : {\n      \"description\": \"A pathogen moves from an animal host or animal-associated\
-  \ source into humans.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
-  source_of_zoonotic_spillover\",\n      \"label\": \"spills over from\",\n      \"\
-  range\": \"animal_host\"\n    },\n    \"subtype_of\": {\n      \"description\":\
-  \ \"A taxonomic or ontology concept is a more specific type of another concept.\"\
-  ,\n      \"domain\": \"pathogen_entity\",\n      \"inverse\": \"has_subtype\",\n\
-  \      \"label\": \"subtype of\",\n      \"range\": \"pathogen_entity\"\n    },\n\
-  \    \"supports\": {\n      \"description\": \"An observation, result, or sequence\
-  \ analysis provides evidence for a spillover interpretation.\",\n      \"domain\"\
-  : \"investigation_entity\",\n      \"inverse\": \"supported_by\",\n      \"label\"\
-  : \"supports\",\n      \"range\": \"zoonotic_spillover\"\n    },\n    \"tested_by\"\
-  : {\n      \"description\": \"A specimen is processed using a laboratory assay.\"\
-  ,\n      \"domain\": \"specimen\",\n      \"inverse\": \"tests\",\n      \"label\"\
-  : \"tested by\",\n      \"range\": \"assay\"\n    },\n    \"transmitted_by\": {\n\
-  \      \"description\": \"A pathogen uses a specified transmission route.\",\n \
-  \     \"domain\": \"pathogen\",\n      \"inverse\": \"transmits_pathogen\",\n  \
-  \    \"label\": \"transmitted by\",\n      \"range\": \"transmission_route\"\n \
-  \   },\n    \"transmitted_to\": {\n      \"description\": \"A pathogen is transmitted\
-  \ to a recipient host.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
-  acquires_from\",\n      \"label\": \"transmitted to\",\n      \"range\": \"host\"\
-  \n    },\n    \"yields_result\": {\n      \"description\": \"An assay produces an\
-  \ observed test result.\",\n      \"domain\": \"assay\",\n      \"inverse\": \"\
-  result_of\",\n      \"label\": \"yields result\",\n      \"range\": \"test_result\"\
-  \n    }\n  }\n}"
+  related_to\": {\n      \"description\": \"A general evidence-grounded relation between\
+  \ two investigation entities when no more specific relation is justified.\",\n \
+  \     \"domain\": \"investigation_entity\",\n      \"inverse\": \"related_to\",\n\
+  \      \"label\": \"related to\",\n      \"range\": \"investigation_entity\"\n \
+  \   },\n    \"sampled_from\": {\n      \"description\": \"A specimen is collected\
+  \ from a host.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"source_of_specimen\"\
+  ,\n      \"label\": \"sampled from\",\n      \"range\": \"host\"\n    },\n    \"\
+  spills_over_from\": {\n      \"description\": \"A pathogen moves from an animal\
+  \ host or animal-associated source into humans.\",\n      \"domain\": \"pathogen\"\
+  ,\n      \"inverse\": \"source_of_zoonotic_spillover\",\n      \"label\": \"spills\
+  \ over from\",\n      \"range\": \"animal_host\"\n    },\n    \"subtype_of\": {\n\
+  \      \"description\": \"A taxonomic or ontology concept is a more specific type\
+  \ of another concept.\",\n      \"domain\": \"pathogen_entity\",\n      \"inverse\"\
+  : \"has_subtype\",\n      \"label\": \"subtype of\",\n      \"range\": \"pathogen_entity\"\
+  \n    },\n    \"supports\": {\n      \"description\": \"An observation, result,\
+  \ or sequence analysis provides evidence for a spillover interpretation.\",\n  \
+  \    \"domain\": \"investigation_entity\",\n      \"inverse\": \"supported_by\"\
+  ,\n      \"label\": \"supports\",\n      \"range\": \"zoonotic_spillover\"\n   \
+  \ },\n    \"tested_by\": {\n      \"description\": \"A specimen is processed using\
+  \ a laboratory assay.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"\
+  tests\",\n      \"label\": \"tested by\",\n      \"range\": \"assay\"\n    },\n\
+  \    \"transmitted_by\": {\n      \"description\": \"A pathogen uses a specified\
+  \ transmission route.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
+  transmits_pathogen\",\n      \"label\": \"transmitted by\",\n      \"range\": \"\
+  transmission_route\"\n    },\n    \"transmitted_to\": {\n      \"description\":\
+  \ \"A pathogen is transmitted to a recipient host.\",\n      \"domain\": \"pathogen\"\
+  ,\n      \"inverse\": \"acquires_from\",\n      \"label\": \"transmitted to\",\n\
+  \      \"range\": \"host\"\n    },\n    \"yields_result\": {\n      \"description\"\
+  : \"An assay produces an observed test result.\",\n      \"domain\": \"assay\",\n\
+  \      \"inverse\": \"result_of\",\n      \"label\": \"yields result\",\n      \"\
+  range\": \"test_result\"\n    }\n  }\n}"
 rendered: true
 render_context:
   template_name: ontology-aware-graphicalizer
@@ -1046,6 +1055,7 @@ render_context:
   - occurred_in
   - presents_with
   - prevents
+  - related_to
   - sampled_from
   - spills_over_from
   - subtype_of

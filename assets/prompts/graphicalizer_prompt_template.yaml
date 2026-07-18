@@ -29,7 +29,8 @@ ontology_casting_system: |
   extracted relation exactly one ontology relation type when justified. Use the
   exact dictionary keys under entity_types and relation_types as ontology_type
   values; never use a label, synonym, inverse value, description, or free-form
-  relation name. Preserve all entity ids, relation ids, and endpoints. Every
+  relation name. If no specific relation is justified, use `related_to` rather
+  than inventing a relation type. Preserve all entity ids, relation ids, and endpoints. Every
   returned graph object must have one exact ontology type, because untyped
   objects cannot enter the final graph. Do not add entities or relations and do
   not alter the graph topology. Return exactly one casting for every supplied

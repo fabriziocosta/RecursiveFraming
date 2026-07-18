@@ -2,6 +2,9 @@ from types import SimpleNamespace
 
 from graphicalizer import (
     ExtractionDensityConfig,
+    FreeEntity,
+    FreeGraphExtraction,
+    FreeRelation,
     GraphicalizerPrompt,
     OpenAIResponsesClient,
     Ontology,
@@ -99,6 +102,42 @@ class InvalidExpansionResponses(DensityResponses):
         return super().parse(**kwargs)
 
 
+class UnknownCastingResponses:
+    def parse(self, **kwargs):
+        response_type = kwargs["text_format"]
+        return SimpleNamespace(
+            output_parsed=response_type(
+                entities=[
+                    {
+                        "id": "e1",
+                        "ontology_type": "thing",
+                        "canonical_name": "alpha",
+                        "attributes": [],
+                        "confidence": 1.0,
+                    },
+                    {
+                        "id": "e2",
+                        "ontology_type": "thing",
+                        "canonical_name": "beta",
+                        "attributes": [],
+                        "confidence": 1.0,
+                    },
+                ],
+                relations=[
+                    {
+                        "id": "r1",
+                        "source_id": "e1",
+                        "target_id": "e2",
+                        "ontology_type": "influences",
+                        "attributes": [],
+                        "confidence": 1.0,
+                    }
+                ],
+                notes="",
+            )
+        )
+
+
 def test_density_retry_expands_an_undersized_extraction():
     ontology = Ontology(entity_types={"thing": {}}, relation_types={"links": {}})
     density = ExtractionDensityConfig(
@@ -165,3 +204,33 @@ def test_density_retry_rejects_relations_with_unknown_endpoints():
     assert responses.calls == 3
     assert len(extraction.entities) == 2
     assert extraction.relations[0].target_id == "e2"
+
+
+def test_casting_falls_back_for_persistent_unknown_relation_type():
+    ontology = Ontology(
+        entity_types={"thing": {}, "investigation_entity": {}},
+        relation_types={"related_to": {}},
+    )
+    density = ExtractionDensityConfig(density_retries=0)
+    prompt = GraphicalizerPrompt.default().render(
+        ontology,
+        density,
+        model="test-model",
+    )
+    client = OpenAIResponsesClient(
+        prompt=prompt,
+        ontology=ontology,
+        extraction_density=density,
+        model="test-model",
+        client=SimpleNamespace(responses=UnknownCastingResponses()),
+        casting_retries=0,
+    )
+    extraction = FreeGraphExtraction(
+        entities=(FreeEntity("e1", "alpha", "thing"), FreeEntity("e2", "beta", "thing")),
+        relations=(FreeRelation("r1", "e1", "e2", "influences"),),
+    )
+
+    casting = client.cast_to_ontology("alpha influences beta", extraction, ontology)
+
+    assert casting.relations[0].ontology_type == "related_to"
+    assert casting.relations[0].attributes["unmapped_ontology_type"] == "influences"

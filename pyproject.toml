@@ -32,6 +32,9 @@ ollama = [
 openai = [
   "openai>=1.0",
 ]
+embeddings = [
+  "sentence-transformers>=3.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/fabriziocosta/RecursiveFraming"

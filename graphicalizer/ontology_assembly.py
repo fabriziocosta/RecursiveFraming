@@ -344,6 +344,7 @@ def assemble_microbiology_ontology(
     base_path = ontology_root / "entity_ontology_microbiology.yaml"
     assembled_path = ontology_root / "entity_ontology_microbiology_assembled.yaml"
     catalog_path = ontology_root / "microbiology_external_terms.json"
+    generic_seed_path = ontology_root / "entity_ontology_generic.yaml"
     level = _normalise_abstraction_level(abstraction_level)
 
     resources = {
@@ -408,6 +409,16 @@ def assemble_microbiology_ontology(
     except ImportError as exc:  # pragma: no cover - environment dependent
         raise RuntimeError("Install PyYAML to assemble the ontology.") from exc
     base = yaml.safe_load(base_path.read_text(encoding="utf-8"))
+    if generic_seed_path.exists():
+        generic_seed = yaml.safe_load(generic_seed_path.read_text(encoding="utf-8")) or {}
+        base["entity_types"] = {
+            **generic_seed.get("entity_types", {}),
+            **base.get("entity_types", {}),
+        }
+        base["relation_types"] = {
+            **generic_seed.get("relation_types", {}),
+            **base.get("relation_types", {}),
+        }
     for entity_key, entity_type in base.get("entity_types", {}).items():
         references = _reference_terms(catalog, entity_key)
         if references:
@@ -416,6 +427,9 @@ def assemble_microbiology_ontology(
     base["ontology"]["version"] = "0.2.0"
     base["ontology"]["assembly"] = {
         "method": "download, relevance-filter, hierarchy-rank, and retain a bounded term catalog",
+        "generic_seed": str(generic_seed_path.relative_to(root))
+        if generic_seed_path.exists()
+        else None,
         "term_budget": term_budget,
         "abstraction_level": level,
         "sources": metadata,
