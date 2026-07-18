@@ -65,6 +65,109 @@ class PathogenSpec:
 
 
 @dataclass(frozen=True)
+class SearchBundle:
+    """Named PubMed evidence-term bundle loaded from a YAML asset."""
+
+    search_type: str
+    terms: tuple[str, ...]
+    label: str = ""
+    description: str = ""
+    version: str = "1"
+
+    def __post_init__(self) -> None:
+        search_type = self.search_type.strip()
+        if not search_type:
+            raise ValueError("search_type must not be empty.")
+        normalized = tuple(str(term).strip() for term in self.terms if str(term).strip())
+        if not normalized:
+            raise ValueError(f"Search bundle {search_type!r} must contain terms.")
+        seen: set[str] = set()
+        deduplicated: list[str] = []
+        for term in normalized:
+            key = term.casefold()
+            if key not in seen:
+                seen.add(key)
+                deduplicated.append(term)
+        object.__setattr__(self, "search_type", search_type)
+        object.__setattr__(self, "terms", tuple(deduplicated))
+
+
+def load_search_bundle(
+    path: str | Path,
+    *,
+    expected_search_type: str | None = None,
+) -> SearchBundle:
+    """Load and validate one generic search-term bundle from YAML."""
+    try:
+        import yaml
+    except ImportError as exc:  # pragma: no cover - base dependency
+        raise RuntimeError("Install PyYAML to load search bundles.") from exc
+
+    source = Path(path)
+    data = yaml.safe_load(source.read_text(encoding="utf-8"))
+    if not isinstance(data, Mapping):
+        raise ValueError(f"Search bundle YAML must contain a mapping: {source}")
+    terms = data.get("terms")
+    if isinstance(terms, str) or not isinstance(terms, Sequence):
+        raise ValueError(f"Search bundle terms must be a list: {source}")
+    bundle = SearchBundle(
+        search_type=str(data.get("search_type", source.stem)),
+        terms=tuple(str(term) for term in terms),
+        label=str(data.get("label", "")),
+        description=str(data.get("description", "")),
+        version=str(data.get("version", "1")),
+    )
+    if expected_search_type is not None and bundle.search_type != expected_search_type:
+        raise ValueError(
+            f"Expected search bundle type {expected_search_type!r}, "
+            f"got {bundle.search_type!r} from {source}."
+        )
+    return bundle
+
+
+def normalize_search_bundles(
+    search_bundles: Mapping[str, SearchBundle | Sequence[str]] | Sequence[SearchBundle] | None = None,
+    *,
+    animal_terms: Sequence[str] = DEFAULT_ANIMAL_TERMS,
+    zoonosis_terms: Sequence[str] = DEFAULT_ZOONOSIS_TERMS,
+) -> tuple[SearchBundle, ...]:
+    """Normalize generic search bundles while retaining legacy term arguments."""
+    if search_bundles is None:
+        candidates: Sequence[SearchBundle] = (
+            SearchBundle("animal", tuple(animal_terms)),
+            SearchBundle("zoonosis", tuple(zoonosis_terms)),
+        )
+    elif isinstance(search_bundles, Mapping):
+        mapped: list[SearchBundle] = []
+        for search_type, value in search_bundles.items():
+            if isinstance(value, SearchBundle):
+                if value.search_type != str(search_type):
+                    raise ValueError(
+                        f"Search bundle key {search_type!r} does not match "
+                        f"bundle type {value.search_type!r}."
+                    )
+                mapped.append(value)
+            else:
+                terms = (value,) if isinstance(value, str) else tuple(value)
+                mapped.append(SearchBundle(str(search_type), terms))
+        candidates = tuple(mapped)
+    else:
+        candidates = tuple(search_bundles)
+
+    if not candidates:
+        raise ValueError("search_bundles must contain at least one bundle.")
+    seen: set[str] = set()
+    for bundle in candidates:
+        if not isinstance(bundle, SearchBundle):
+            raise TypeError("search_bundles sequences must contain SearchBundle values.")
+        key = bundle.search_type.casefold()
+        if key in seen:
+            raise ValueError(f"Search bundle types must be unique: {bundle.search_type!r}")
+        seen.add(key)
+    return tuple(candidates)
+
+
+@dataclass(frozen=True)
 class CorpusCollectionResult:
     """Outputs and summary metadata from a corpus collection run."""
 
@@ -230,13 +333,22 @@ def build_pathogen_search_query(
     pathogen: PathogenSpec,
     search_type: str,
     *,
+    search_bundles: Mapping[str, SearchBundle | Sequence[str]] | Sequence[SearchBundle] | None = None,
     animal_terms: Sequence[str] = DEFAULT_ANIMAL_TERMS,
     zoonosis_terms: Sequence[str] = DEFAULT_ZOONOSIS_TERMS,
 ) -> str:
     """Build one recall-oriented pathogen search query."""
-    if search_type not in SEARCH_TYPES:
-        raise ValueError(f"search_type must be one of {SEARCH_TYPES}.")
-    terms = animal_terms if search_type == "animal" else zoonosis_terms
+    bundles = {
+        bundle.search_type: bundle
+        for bundle in normalize_search_bundles(
+            search_bundles,
+            animal_terms=animal_terms,
+            zoonosis_terms=zoonosis_terms,
+        )
+    }
+    if search_type not in bundles:
+        raise ValueError(f"search_type must be one of {tuple(bundles)}.")
+    terms = bundles[search_type].terms
     pathogen_clause = PubMedClient.keyword_query(pathogen.all_terms(), operator="OR")
     evidence_clause = PubMedClient.keyword_query(terms, operator="OR")
     return f"({pathogen_clause}) AND ({evidence_clause})"
@@ -251,6 +363,7 @@ def collect_pubmed_corpus(
     pathogens: Mapping[str, Sequence[str]] | Sequence[PathogenSpec],
     output_dir: str | Path,
     *,
+    search_bundles: Mapping[str, SearchBundle | Sequence[str]] | Sequence[SearchBundle] | None = None,
     animal_terms: Sequence[str] = DEFAULT_ANIMAL_TERMS,
     zoonosis_terms: Sequence[str] = DEFAULT_ZOONOSIS_TERMS,
     max_results_per_query: int | None = None,
@@ -261,12 +374,16 @@ def collect_pubmed_corpus(
 ) -> CorpusCollectionResult:
     """Collect and checkpoint a deduplicated pathogen abstract corpus."""
     specs = normalize_pathogens(pathogens)
+    bundles = normalize_search_bundles(
+        search_bundles,
+        animal_terms=animal_terms,
+        zoonosis_terms=zoonosis_terms,
+    )
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
     config = {
         "pathogens": [{"name": spec.name, "aliases": list(spec.aliases)} for spec in specs],
-        "animal_terms": list(animal_terms),
-        "zoonosis_terms": list(zoonosis_terms),
+        "search_bundles": [asdict(bundle) for bundle in bundles],
         "max_results_per_query": max_results_per_query,
         "search_page_size": search_page_size,
         "fetch_batch_size": fetch_batch_size,
@@ -286,10 +403,12 @@ def collect_pubmed_corpus(
     query_rows: list[dict[str, Any]] = []
     pmid_rows: list[dict[str, Any]] = []
     for spec in specs:
-        for search_type in SEARCH_TYPES:
+        for bundle in bundles:
+            search_type = bundle.search_type
             query = build_pathogen_search_query(
                 spec,
                 search_type,
+                search_bundles=bundles,
                 animal_terms=animal_terms,
                 zoonosis_terms=zoonosis_terms,
             )
@@ -861,6 +980,7 @@ __all__ = [
     "CorpusCollectionResult",
     "OpenAIChatCompleter",
     "PathogenSpec",
+    "SearchBundle",
     "ScreeningRunResult",
     "TerminalLLMError",
     "build_pathogen_search_query",
@@ -869,6 +989,8 @@ __all__ = [
     "collect_pubmed_corpus",
     "derive_category_counts",
     "normalize_pathogens",
+    "normalize_search_bundles",
     "normalize_screening_output",
+    "load_search_bundle",
     "screen_pubmed_corpus",
 ]

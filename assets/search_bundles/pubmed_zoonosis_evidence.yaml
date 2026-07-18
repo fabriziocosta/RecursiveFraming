@@ -1,0 +1,14 @@
+search_type: zoonosis
+label: Zoonosis and human infection evidence
+version: "1.0"
+description: >-
+  Recall-oriented terms for finding abstracts that discuss zoonosis,
+  spillover, animal-to-human transmission, or human infection and disease.
+terms:
+  - zoonosis
+  - zoonotic
+  - spillover
+  - animal-to-human
+  - human infection
+  - human disease
+  - transmission

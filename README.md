@@ -100,8 +100,11 @@ system path.
 The [PubMed download notebook](notebooks/01_pubmed_abstract_download.ipynb) uses
 NCBI E-utilities to build a resumable pathogen/zoonosis corpus, then screens
 each candidate abstract with a pathogen-specific LLM prompt. Configure the
-pathogen aliases and keyword bundles in
-`notebooks/01_pubmed_abstract_download.ipynb`; set `PUBMED_EMAIL` and
+pathogen aliases in the notebook and edit the reusable search bundles under
+`assets/search_bundles/`; set `PUBMED_EMAIL` and
 `OPENAI_API_KEY` before running it. Parquet checkpoints and the run manifest
 are written under `outputs/pubmed_screening/`, which is intentionally ignored
 by Git.
+
+Detailed notebook assumptions, parameters, outputs, and troubleshooting notes
+are documented in [`docs/`](docs/README.md).

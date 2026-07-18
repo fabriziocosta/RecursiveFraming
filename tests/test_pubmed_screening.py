@@ -12,6 +12,7 @@ from graphicalizer import (
     collect_pubmed_corpus,
     derive_category_counts,
     classify_abstract,
+    load_search_bundle,
     normalize_screening_output,
     screen_pubmed_corpus,
     TerminalLLMError,
@@ -94,6 +95,28 @@ class TerminalLLM:
 
 
 class PubMedScreeningTests(unittest.TestCase):
+    def test_yaml_search_bundle_is_loaded_and_can_define_custom_domain(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "environment.yaml"
+            path.write_text(
+                "search_type: environment\n"
+                "label: Environmental evidence\n"
+                "terms:\n"
+                "  - reservoir\n"
+                "  - habitat\n",
+                encoding="utf-8",
+            )
+            bundle = load_search_bundle(path, expected_search_type="environment")
+            query = build_pathogen_search_query(
+                PathogenSpec("Nipah virus"),
+                "environment",
+                search_bundles={"environment": bundle},
+            )
+
+        self.assertEqual(bundle.terms, ("reservoir", "habitat"))
+        self.assertIn("reservoir[Title/Abstract]", query)
+        self.assertIn("habitat[Title/Abstract]", query)
+
     def test_query_contains_both_pathogen_and_evidence_clauses(self):
         query = build_pathogen_search_query(
             PathogenSpec("Nipah virus", ("NiV",)),

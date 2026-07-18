@@ -1,0 +1,13 @@
+search_type: animal
+label: Animal and host infection evidence
+version: "1.0"
+description: >-
+  Recall-oriented terms for finding abstracts that discuss infection in
+  animals, hosts, wildlife, livestock, or veterinary settings.
+terms:
+  - animal
+  - host
+  - wildlife
+  - livestock
+  - veterinary
+  - infection

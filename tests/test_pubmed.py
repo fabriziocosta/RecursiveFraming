@@ -1,6 +1,8 @@
 import tempfile
 import unittest
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
+from unittest.mock import patch
 
 from graphicalizer import PubMedArticle, PubMedClient, PubMedSearchPage
 
@@ -97,6 +99,46 @@ class PubMedTests(unittest.TestCase):
         self.assertEqual(ids, ["101", "102", "103"])
         self.assertEqual([call[1].get("retstart", 0) for call in calls], [0, 2])
         self.assertIsInstance(self.client.search_page("virus[Title/Abstract]"), PubMedSearchPage)
+
+    def test_api_key_is_optional_and_omitted_when_unset(self):
+        response = _JSONResponse(b'{"esearchresult":{"count":"0","idlist":[]}}')
+        with patch("graphicalizer.pubmed.urlopen", return_value=response) as urlopen:
+            client = PubMedClient(
+                email="researcher@example.org",
+                api_key=None,
+                min_interval=0,
+            )
+            self.assertEqual(client.search("virus[Title/Abstract]"), [])
+
+        params = parse_qs(urlparse(urlopen.call_args.args[0].full_url).query)
+        self.assertNotIn("api_key", params)
+
+    def test_api_key_is_forwarded_when_configured(self):
+        response = _JSONResponse(b'{"esearchresult":{"count":"0","idlist":[]}}')
+        with patch("graphicalizer.pubmed.urlopen", return_value=response) as urlopen:
+            client = PubMedClient(
+                email="researcher@example.org",
+                api_key="test-key",
+                min_interval=0,
+            )
+            self.assertEqual(client.search("virus[Title/Abstract]"), [])
+
+        params = parse_qs(urlparse(urlopen.call_args.args[0].full_url).query)
+        self.assertEqual(params["api_key"], ["test-key"])
+
+
+class _JSONResponse:
+    def __init__(self, body):
+        self.body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
+    def read(self):
+        return self.body
 
 
 if __name__ == "__main__":
