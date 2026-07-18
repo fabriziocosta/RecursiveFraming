@@ -14,6 +14,8 @@ from .embeddings import *
 from .embeddings import __all__ as _EMBEDDINGS_ALL
 from .graph_store import *
 from .graph_store import __all__ as _GRAPH_STORE_ALL
+from .batch import *
+from .batch import __all__ as _BATCH_ALL
 
 __all__ = [
     *_CORE_ALL,
@@ -23,4 +25,5 @@ __all__ = [
     *_ONTOLOGY_ASSEMBLY_ALL,
     *_EMBEDDINGS_ALL,
     *_GRAPH_STORE_ALL,
+    *_BATCH_ALL,
 ]
