@@ -1,6 +1,6 @@
-# Notebook 01b — PubMed pathogen category assignment
+# Notebook 02 — PubMed pathogen category assignment
 
-Source notebook: notebooks/01b_pubmed_pathogen_category.ipynb
+Source notebook: notebooks/02_pubmed_pathogen_category.ipynb
 
 ## Purpose
 

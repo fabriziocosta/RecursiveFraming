@@ -1,6 +1,6 @@
-# Notebook 04 — Batch semantic abstraction
+# Notebook 05 — Batch semantic abstraction
 
-Source notebook: [`notebooks/04_batch_semantic_abstraction.ipynb`](../notebooks/04_batch_semantic_abstraction.ipynb)
+Source notebook: [`notebooks/05_batch_semantic_abstraction.ipynb`](../notebooks/05_batch_semantic_abstraction.ipynb)
 
 ## Purpose
 
@@ -155,7 +155,7 @@ The notebook prints:
 
 ## Relation to notebook 03
 
-Notebook 03 is the diagnostic path: it exposes validation reports, renders the
+Notebook 04 is the diagnostic path: it exposes validation reports, renders the
 full graph, samples a connected subgraph, and generates a narrative. Notebook
 04 intentionally omits those interactive displays and focuses on durable
 per-abstract graph files plus a manifest. Use the same ontology, provider,

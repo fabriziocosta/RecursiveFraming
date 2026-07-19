@@ -49,14 +49,15 @@ Set the following environment variables before running the relevant cells:
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `PUBMED_EMAIL` | Yes | Contact email sent to NCBI with every E-utilities request. The client validates that it is non-empty and contains `@`. |
+| `PUBMED_EMAIL` | No; defaults to `xfcosta@gmail.com` | Contact email sent to NCBI with every E-utilities request. Set the environment variable to override the notebook default. |
 | `PUBMED_API_KEY` | No | Optional NCBI API key. If absent, the request is made in the same way except that no `api_key` parameter is sent. |
 | `OPENAI_API_KEY` | Yes for the refinement cell | API credential used by `OpenAIChatCompleter`. |
 | `OPENAI_MODEL` | No | Chat-completion model name; defaults to `gpt-4o-mini`. |
 
 An NCBI API key is not needed for correctness. It can provide a higher request
-rate limit, but leaving it unset does not disable searching. The notebook does
-require `PUBMED_EMAIL` so that requests have a contact identity.
+rate limit, but leaving it unset does not disable searching. The notebook uses
+`xfcosta@gmail.com` by default so it can run directly in a notebook kernel;
+set `PUBMED_EMAIL` to use a different contact address.
 
 ## Pathogen and search-bundle configuration
 
@@ -176,7 +177,7 @@ The normalized decision contains `refinement_keep`,
 `rationale`, `confidence`, `review_required`, `accepted`, model, prompt
 hash, timestamp, and attempt count. Only accepted rows are copied to
 `refined_corpus_articles.parquet`; category 1/2/3 logic is handled by notebook
-01b.
+02.
 
 ## Durable outputs
 
@@ -189,7 +190,7 @@ All files below are written under `OUTPUT_DIR` and ignored by Git:
 | `corpus_articles.parquet` | One deduplicated row per `(pathogen, PMID)`, including title, abstract, publication date, fetch status, search buckets, and queries. |
 | `llm_refinement.parquet` | One target-pathogen relevance decision per `(pathogen, PMID)` and refinement hash. |
 | `refinement_failures.parquet` | Failed, invalid, or terminal refinement rows for inspection/retry. |
-| `refined_corpus_articles.parquet` | Accepted corpus rows plus refinement evidence and provenance columns; input to notebook 01b. |
+| `refined_corpus_articles.parquet` | Accepted corpus rows plus refinement evidence and provenance columns; input to notebook 02. |
 | `run_manifest.json` | Configuration hashes, query/result counts, model and prompt hashes, timestamps, paths, failures, and category summaries. |
 
 Parquet is used because it preserves typed tabular data and supports efficient
@@ -226,4 +227,4 @@ biological evidence.
 
 The quality-review cell should be used to inspect sample refinement decisions
 and all review-required records before sending the accepted corpus to notebook
-01b.
+02.

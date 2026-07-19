@@ -100,10 +100,11 @@ system path.
 The [PubMed collection notebook](notebooks/01_pubmed_abstract_download.ipynb)
 uses NCBI E-utilities to build a resumable pathogen/zoonosis corpus, then
 refines target-pathogen attribution with an LLM. The
-[category notebook](notebooks/01b_pubmed_pathogen_category.ipynb) classifies
+[category notebook](notebooks/02_pubmed_pathogen_category.ipynb) classifies
 the accepted corpus and writes pathogen-level category tables. Configure the
 pathogen aliases in the notebook and edit the reusable search bundles under
-`assets/search_bundles/`; set `PUBMED_EMAIL` and
+`assets/search_bundles/`; the notebook defaults to `xfcosta@gmail.com` for
+`PUBMED_EMAIL` (override it if needed) and requires
 `OPENAI_API_KEY` before running it. Parquet checkpoints and the run manifest
 are written under `outputs/pubmed_screening/`, which is intentionally ignored
 by Git.

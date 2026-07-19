@@ -1,6 +1,6 @@
-# Notebook 03 — Single-abstract semantic abstraction
+# Notebook 04 — Single-abstract semantic abstraction
 
-Source notebook: [`notebooks/03_semantic_abstraction.ipynb`](../notebooks/03_semantic_abstraction.ipynb)
+Source notebook: [`notebooks/04_semantic_abstraction.ipynb`](../notebooks/04_semantic_abstraction.ipynb)
 
 ## Purpose
 
