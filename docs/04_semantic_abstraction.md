@@ -122,7 +122,7 @@ repaired before it becomes the final graph.
 ## Persisting and loading the graph
 
 The graph is saved through `NetworkXGraphStore` in `outputs/graphs` with ID
-`pubmed_<pathogen>_<PMID>`, for example `pubmed_Nipah_virus_19751584.gpickle`.
+`pubmed_<pathogen>_<PMID>`, for example `pubmed_Coxiella_burnetii_<PMID>.gpickle`.
 The store writes via a
 temporary file and replacement. Graph files use Python pickle because node
 attributes include mappings, provenance, and vectors; only load graph files

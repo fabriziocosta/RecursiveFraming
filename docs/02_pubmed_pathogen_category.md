@@ -35,7 +35,7 @@ refinement.
 | CORPUS_PATHOGENS | None | Optional pathogen filter for a focused run. |
 | CORPUS_START_YEAR | None | Optional inclusive publication-year lower bound. |
 | CORPUS_END_YEAR | None | Optional inclusive publication-year upper bound. |
-| PATHOGENS | Nipah virus aliases | Canonical names and aliases used by the classifier prompt. They must cover the pathogens in the refined corpus. |
+| PATHOGENS | Coxiella burnetii aliases | Canonical names and aliases used by the classifier prompt. They must cover the pathogens in the refined corpus. |
 | OPENAI_MODEL | gpt-4o-mini | Chat-completion model. |
 | LLM_MAX_TOKENS | 1024 | Completion token limit. |
 | LLM_RETRIES | 3 | Retry count for retryable errors or malformed output. |

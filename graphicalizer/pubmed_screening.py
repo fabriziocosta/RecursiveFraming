@@ -1275,6 +1275,115 @@ def refine_pubmed_corpus(
     return RefinementRunResult(refined_corpus, refinement, failures, refinement_manifest)
 
 
+def load_refinement_run(
+    corpus: pd.DataFrame | str | Path,
+    output_dir: str | Path,
+    *,
+    refinement_hash: str | None = None,
+) -> RefinementRunResult:
+    """Reconstruct a refinement result from its persisted checkpoints.
+
+    This is useful after a notebook kernel interruption, when
+    :func:`refine_pubmed_corpus` has flushed its in-memory batch but did not
+    return a ``RefinementRunResult`` to the caller.
+    """
+    corpus_df = pd.read_parquet(corpus) if isinstance(corpus, (str, Path)) else corpus.copy()
+    required = {"pathogen", "pmid"}
+    missing = required - set(corpus_df.columns)
+    if missing:
+        raise KeyError(f"corpus is missing required columns: {sorted(missing)}")
+
+    output = Path(output_dir)
+    refinement_path = output / "llm_refinement.parquet"
+    if not refinement_path.exists():
+        raise FileNotFoundError(
+            f"No refinement checkpoint found at {refinement_path}. "
+            "Run the refinement cell first."
+        )
+    refinement = _read_parquet(refinement_path)
+    if refinement.empty:
+        raise ValueError(f"Refinement checkpoint is empty: {refinement_path}")
+
+    top_level_manifest: dict[str, Any] = {}
+    manifest_path = output / "run_manifest.json"
+    if manifest_path.exists():
+        try:
+            top_level_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            top_level_manifest = {}
+
+    selected_hash = refinement_hash
+    if selected_hash is None and "refined_at" in refinement:
+        latest = refinement.sort_values("refined_at").iloc[-1]
+        selected_hash = str(latest["refinement_hash"])
+    if selected_hash is None:
+        selected_hash = str(
+            top_level_manifest.get("refinement", {}).get("refinement_hash", "")
+        ) or None
+    if selected_hash is None:
+        hashes = refinement["refinement_hash"].dropna().astype(str).unique()
+        if len(hashes) != 1:
+            raise ValueError(
+                "Multiple refinement checkpoints are present; pass refinement_hash explicitly."
+            )
+        selected_hash = str(hashes[0])
+
+    current_refinement = refinement[
+        _where(refinement, "refinement_hash", selected_hash)
+    ].copy()
+    if current_refinement.empty:
+        raise KeyError(f"No rows found for refinement_hash={selected_hash!r}")
+
+    failures = current_refinement[
+        current_refinement["classification_status"].isin(
+            ["failed", "invalid_response", "terminal_failure"]
+        )
+    ].copy() if "classification_status" in current_refinement else pd.DataFrame()
+    accepted = current_refinement[
+        (current_refinement["classification_status"] == "classified")
+        & current_refinement["accepted"].fillna(False).astype(bool)
+    ].copy() if {"classification_status", "accepted"}.issubset(current_refinement.columns) else pd.DataFrame()
+
+    decision_columns = [
+        "pathogen",
+        "pmid",
+        "refinement_hash",
+        "refinement_keep",
+        "target_pathogen_supported",
+        "evidence_relevant",
+        "evidence_phrases",
+        "rationale",
+        "confidence",
+        "review_required",
+        "accepted",
+        "model",
+        "prompt_hash",
+        "refined_at",
+    ]
+    decision_columns = [column for column in decision_columns if column in accepted.columns]
+    if accepted.empty:
+        refined_corpus = corpus_df.iloc[0:0].copy()
+    else:
+        refined_corpus = corpus_df.merge(
+            accepted[decision_columns],
+            on=["pathogen", "pmid"],
+            how="inner",
+            suffixes=("", "_refinement"),
+        )
+
+    refinement_manifest = dict(top_level_manifest.get("refinement", {}))
+    refinement_manifest.setdefault("refinement_hash", selected_hash)
+    refinement_manifest.setdefault("paths", {})
+    refinement_manifest["paths"].setdefault("refinement", str(refinement_path))
+    refinement_manifest["reconstructed_from_checkpoints"] = True
+    return RefinementRunResult(
+        refined_corpus=refined_corpus,
+        refinement=current_refinement,
+        failures=failures,
+        manifest=refinement_manifest,
+    )
+
+
 def _publication_year(value: Any) -> int | None:
     match = re.search(r"(\d{4})", str(value or ""))
     return int(match.group(1)) if match else None
@@ -1452,6 +1561,7 @@ __all__ = [
     "collect_pubmed_corpus",
     "derive_category_counts",
     "load_corpus_articles",
+    "load_refinement_run",
     "normalize_pathogens",
     "normalize_refinement_output",
     "normalize_search_bundles",

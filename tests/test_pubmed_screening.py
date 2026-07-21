@@ -14,6 +14,7 @@ from graphicalizer import (
     classify_abstract,
     load_search_bundle,
     load_corpus_articles,
+    load_refinement_run,
     normalize_screening_output,
     normalize_refinement_output,
     refine_pubmed_corpus,
@@ -112,6 +113,27 @@ class RefiningLLM:
                 "evidence_relevant": accepted,
                 "evidence_phrases": ["Nipah virus"] if accepted else [],
                 "rationale": "The target is explicit." if accepted else "Incidental evidence.",
+                "confidence": 0.95,
+                "review_required": False,
+            }
+        )
+
+
+class InterruptingRefiningLLM:
+    def __init__(self):
+        self.calls = 0
+
+    def complete(self, prompt, **kwargs):
+        self.calls += 1
+        if self.calls == 2:
+            raise KeyboardInterrupt
+        return json.dumps(
+            {
+                "keep": True,
+                "target_pathogen_supported": True,
+                "evidence_relevant": True,
+                "evidence_phrases": ["target"],
+                "rationale": "The target is explicit.",
                 "confidence": 0.95,
                 "review_required": False,
             }
@@ -218,6 +240,45 @@ class PubMedScreeningTests(unittest.TestCase):
         )
         self.assertTrue(result["review_required"])
         self.assertFalse(result["accepted"])
+
+    def test_refinement_checkpoint_can_be_reconstructed_after_interrupt(self):
+        corpus = pd.DataFrame(
+            [
+                {
+                    "config_hash": "cfg",
+                    "pathogen": "Coxiella burnetii",
+                    "pmid": "1",
+                    "title": "One",
+                    "abstract": "target",
+                    "fetch_status": "ok",
+                    "publication_date": "2020",
+                },
+                {
+                    "config_hash": "cfg",
+                    "pathogen": "Coxiella burnetii",
+                    "pmid": "2",
+                    "title": "Two",
+                    "abstract": "target",
+                    "fetch_status": "ok",
+                    "publication_date": "2021",
+                },
+            ]
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(KeyboardInterrupt):
+                refine_pubmed_corpus(
+                    corpus,
+                    {"Coxiella burnetii": ["Coxiella"]},
+                    InterruptingRefiningLLM(),
+                    directory,
+                    model="fake-refiner",
+                    verbose=False,
+                )
+
+            restored = load_refinement_run(corpus, directory)
+            self.assertEqual(len(restored.refinement), 1)
+            self.assertEqual(len(restored.refined_corpus), 1)
+            self.assertTrue(restored.manifest["reconstructed_from_checkpoints"])
 
     def test_query_contains_both_pathogen_and_evidence_clauses(self):
         query = build_pathogen_search_query(

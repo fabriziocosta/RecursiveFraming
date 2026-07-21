@@ -75,8 +75,8 @@ Rows are sorted deterministically by pathogen, publication year, and PMID by
 {GRAPH_ID_PREFIX}_{i:04d}_{pathogen}_{pmid}
 ```
 
-For example, a Nipah row for PMID 40593310 may become
-`pubmed_0000_Nipah_virus_40593310`. Graph IDs depend on the filtered corpus contents and
+For example, a *Coxiella burnetii* row may become
+`pubmed_0000_Coxiella_burnetii_<PMID>`. Graph IDs depend on the filtered corpus contents and
 ordering. Adding rows or changing filters can change the numeric prefix of
 later records; preserve the manifest if IDs are used downstream.
 

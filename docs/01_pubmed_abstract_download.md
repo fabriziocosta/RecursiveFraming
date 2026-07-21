@@ -65,7 +65,7 @@ set `PUBMED_EMAIL` to use a different contact address.
 
 ```python
 PATHOGENS = {
-    "Nipah virus": ["Nipah", "NiV"],
+    "Coxiella burnetii": ["Coxiella", "C. burnetii"],
 }
 ```
 
@@ -211,7 +211,10 @@ retry failed refinement rows after fixing credentials or a provider issue, set
 
 Keyboard interrupts preserve the latest checkpoint. A later run can continue
 from it. Failed rows remain visible rather than being mistaken for negative
-biological evidence.
+biological evidence. The final notebook inspection cell reloads
+`corpus_articles.parquet` and reconstructs the refinement result from
+`llm_refinement.parquet`, so it remains runnable even when the refinement cell
+was manually interrupted before returning its in-memory result.
 
 ## Interpretation and limitations
 
