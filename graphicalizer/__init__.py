@@ -18,6 +18,8 @@ from .graph_store import *
 from .graph_store import __all__ as _GRAPH_STORE_ALL
 from .batch import *
 from .batch import __all__ as _BATCH_ALL
+from .zoonosis_species import *
+from .zoonosis_species import __all__ as _ZOONOSIS_SPECIES_ALL
 
 __all__ = [
     *_CORE_ALL,
@@ -29,4 +31,5 @@ __all__ = [
     *_EMBEDDINGS_ALL,
     *_GRAPH_STORE_ALL,
     *_BATCH_ALL,
+    *_ZOONOSIS_SPECIES_ALL,
 ]

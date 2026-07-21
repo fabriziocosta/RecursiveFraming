@@ -97,6 +97,12 @@ system path.
 
 ## PubMed abstracts
 
+The [zoonotic bacterial species notebook](notebooks/00_zoonotic_bacterial_species.ipynb)
+searches zoonosis-related PubMed records and runs title- and abstract-level LLM
+extraction. It writes resumable checkpoints under
+`outputs/pubmed_screening/zoonosis_species/` and the one-row-per-species result
+to `assets/zoonotic_bacterial_species.parquet`.
+
 The [PubMed collection notebook](notebooks/01_pubmed_abstract_download.ipynb)
 uses NCBI E-utilities to build a resumable pathogen/zoonosis corpus, then
 refines target-pathogen attribution with an LLM. The
