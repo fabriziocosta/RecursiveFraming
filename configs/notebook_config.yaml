@@ -12,6 +12,15 @@ common:
   llm_save_every: 10
   resume: true
   retry_failed_llm_rows: false
+  debug_mode: false
+  debug_abstracts_per_pathogen: 5
+  debug_pathogens:
+    Coxiella burnetii:
+    - Coxiella
+    - C. burnetii
+    Bacillus subtilis:
+    - Bacillus subtilis
+    - B. subtilis
 notebook_01_zoonotic_bacterial_species:
   query: ("zoonosis"[Title/Abstract] OR "zoonotic"[Title/Abstract] OR "zoonoses"[Title/Abstract]
     OR spillover[Title/Abstract] OR "animal-to-human"[Title/Abstract] OR "animal to
