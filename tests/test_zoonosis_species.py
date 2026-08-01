@@ -43,9 +43,11 @@ class FakeSpeciesLLM:
     def __init__(self, interrupt_on_call=None):
         self.calls = 0
         self.interrupt_on_call = interrupt_on_call
+        self.prompts = []
 
     def complete(self, prompt, **kwargs):
         self.calls += 1
+        self.prompts.append(prompt)
         if self.calls == self.interrupt_on_call:
             raise KeyboardInterrupt
         species = "Bacillus anthracis" if "anthrax" in prompt.lower() else "Coxiella burnetii"
@@ -87,9 +89,10 @@ class ZoonosisSpeciesTests(unittest.TestCase):
                 )
             self.assertEqual(len(pd.read_parquet(title_path)), 1)
 
+            title_llm = FakeSpeciesLLM()
             title = run_species_extraction_stage(
                 articles,
-                FakeSpeciesLLM(),
+                title_llm,
                 title_path,
                 stage="title",
                 save_every=10,
@@ -110,6 +113,11 @@ class ZoonosisSpeciesTests(unittest.TestCase):
                 {"Bacillus anthracis", "Coxiella burnetii"},
             )
             self.assertTrue((output_dir / "summary.parquet").exists())
+            prompt_payload = json.loads(title_llm.prompts[0])
+            self.assertEqual(
+                list(prompt_payload),
+                ["_fixed_instructions", "stage", "title", "abstract"],
+            )
 
     def test_changed_search_limit_does_not_reuse_old_article_checkpoint(self):
         with tempfile.TemporaryDirectory() as temporary_directory:

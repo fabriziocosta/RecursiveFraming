@@ -657,6 +657,13 @@ when attribution is ambiguous, the target pathogen is not clearly linked to the 
 is below 0.75. Do not make claims about evidence outside this abstract.
 """.strip()
 
+SCREENING_USER_PREFIX = (
+    "SCREENING REQUEST\n"
+    "The system instructions define the classification policy and required JSON schema. "
+    "The request-specific pathogen, aliases, title, and abstract are provided below. "
+    "Treat this final request block as the only changing portion of the prompt."
+)
+
 
 REFINEMENT_SYSTEM_PROMPT = """
 You are a careful biomedical retrieval-refinement reviewer. Decide whether one PubMed abstract is
@@ -676,17 +683,35 @@ not supported. Set review_required=true when the attribution is ambiguous or con
 0.75. A confident rejection is not review_required.
 """.strip()
 
+REFINEMENT_USER_PREFIX = (
+    "REFINEMENT REQUEST\n"
+    "The system instructions define the retrieval-refinement policy and required JSON schema. "
+    "The request-specific pathogen, aliases, title, and abstract are provided below. "
+    "Treat this final request block as the only changing portion of the prompt."
+)
+
+
+def _cache_friendly_json_prompt(
+    fixed_prefix: str,
+    payload: Mapping[str, Any],
+) -> str:
+    """Serialize a stable instruction prefix before the changing request payload."""
+    return json.dumps(
+        {"_fixed_instructions": fixed_prefix, **dict(payload)},
+        ensure_ascii=False,
+        indent=2,
+    )
+
 
 def build_screening_prompt(pathogen: str, aliases: Sequence[str], title: str, abstract: str) -> str:
-    return json.dumps(
+    return _cache_friendly_json_prompt(
+        SCREENING_USER_PREFIX,
         {
             "target_pathogen": pathogen,
             "target_aliases": list(aliases),
             "title": title,
             "abstract": abstract or "[no abstract available]",
         },
-        ensure_ascii=False,
-        indent=2,
     )
 
 
@@ -724,15 +749,14 @@ def _is_terminal_llm_error(exc: Exception) -> bool:
 
 def build_refinement_prompt(pathogen: str, aliases: Sequence[str], title: str, abstract: str) -> str:
     """Build the JSON payload for first-stage pathogen relevance refinement."""
-    return json.dumps(
+    return _cache_friendly_json_prompt(
+        REFINEMENT_USER_PREFIX,
         {
             "target_pathogen": pathogen,
             "target_aliases": list(aliases),
             "title": title,
             "abstract": abstract or "[no abstract available]",
         },
-        ensure_ascii=False,
-        indent=2,
     )
 
 

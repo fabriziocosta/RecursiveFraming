@@ -1,21 +1,37 @@
 name: subgraph-narrator
 version: 0.1.0
-system: "You are a scientific narrative component. Given a connected graph substructure\
-  \ and its ontology, write a plausible, concise narrative of the information contained\
-  \ in that subgraph.\n\nUse every relevant node attribute, edge attribute, ontology\
-  \ type, raw mention, and available node context. Explain relationships and preserve\
-  \ edge direction. Ground exclusively in the supplied subgraph and ontology. Do not\
-  \ introduce entities, relations, causal claims, or unsupported facts. Do not describe\
-  \ the graph mechanically; express its scientific meaning in coherent prose.\n\n\
-  Aim approximately for the requested word count. Do not pad the narrative. If the\
-  \ subgraph is ambiguous or the evidence is limited, state that uncertainty briefly.\n\
-  \n\nRUNTIME NARRATIVE EFFORT\nTreat this as an approximate target, not a reason\
-  \ to add unsupported facts:\n{\n  \"target_words\": 100\n}\n\nONTOLOGY\nUse the\
-  \ exact entity and relation identifiers supplied here when interpreting typed graph\
-  \ attributes:\n{\n  \"entity_types\": {\n    \"animal_host\": {\n      \"attributes\"\
-  : [\n        \"species\",\n        \"common_name\",\n        \"life_stage\",\n \
-  \       \"sex\",\n        \"domestic_status\"\n      ],\n      \"description\":\
-  \ \"A non-human animal considered in relation to infection, carriage, exposure,\
+system: 'You are a scientific narrative component. Given a connected graph substructure
+  and its ontology, write a plausible, concise narrative of the information contained
+  in that subgraph.
+
+
+  Use every relevant node attribute, edge attribute, ontology type, raw mention, and
+  available node context. Explain relationships and preserve edge direction. Ground
+  exclusively in the supplied subgraph and ontology. Do not introduce entities, relations,
+  causal claims, or unsupported facts. Do not describe the graph mechanically; express
+  its scientific meaning in coherent prose.
+
+
+  Aim approximately for the requested word count. Do not pad the narrative. If the
+  subgraph is ambiguous or the evidence is limited, state that uncertainty briefly.
+
+  '
+rendered: true
+render_context:
+  template_name: subgraph-narrator
+  template_version: 0.1.0
+  model: gpt-4o-mini
+  target_words: 100
+  ontology:
+    id: microbiology-zoonosis-assembled
+    version: 0.2.0
+user_prefix: "RUNTIME NARRATIVE EFFORT\nTreat the narrative_config in the request\
+  \ payload as an approximate target, not a reason to add unsupported facts.\n\nONTOLOGY\n\
+  Use the exact entity and relation identifiers supplied here when interpreting typed\
+  \ graph attributes:\n{\n  \"entity_types\": {\n    \"animal_host\": {\n      \"\
+  attributes\": [\n        \"species\",\n        \"common_name\",\n        \"life_stage\"\
+  ,\n        \"sex\",\n        \"domestic_status\"\n      ],\n      \"description\"\
+  : \"A non-human animal considered in relation to infection, carriage, exposure,\
   \ or transmission.\",\n      \"label\": \"Animal host\",\n      \"parent\": \"host\"\
   ,\n      \"synonyms\": [\n        \"animal\",\n        \"non-human host\"\n    \
   \  ]\n    },\n    \"animal_population\": {\n      \"attributes\": [\n        \"\
@@ -350,8 +366,9 @@ system: "You are a scientific narrative component. Given a connected graph subst
   ,\n      \"synonyms\": [\n        \"animal-to-human transmission\",\n        \"\
   zoonotic jump\",\n        \"cross-species transmission\"\n      ]\n    }\n  },\n\
   \  \"metadata\": {\n    \"assembly\": {\n      \"abstraction_level\": 2,\n     \
-  \ \"method\": \"download, relevance-filter, hierarchy-rank, and retain a bounded\
-  \ term catalog\",\n      \"sources\": {\n        \"envo\": {\n          \"available_terms\"\
+  \ \"generic_seed\": \"assets/ontologies/entity_ontology_generic.yaml\",\n      \"\
+  method\": \"download, relevance-filter, hierarchy-rank, and retain a bounded term\
+  \ catalog\",\n      \"sources\": {\n        \"envo\": {\n          \"available_terms\"\
   : 6936,\n          \"path\": \"assets/ontologies/external/envo.obo\",\n        \
   \  \"sha256\": \"7f5a6580d1b59166da07a54f9aa907a76f86079b7082e089192f04df91fd7d5b\"\
   ,\n          \"url\": \"https://purl.obolibrary.org/obo/envo.obo\"\n        },\n\
@@ -405,30 +422,55 @@ system: "You are a scientific narrative component. Given a connected graph subst
   \      \"description\": \"A result indicates the presence of a pathogen or pathogen\
   \ component.\",\n      \"domain\": \"test_result\",\n      \"inverse\": \"detected_by\"\
   ,\n      \"label\": \"detects\",\n      \"range\": \"pathogen_entity\"\n    },\n\
-  \    \"examines_feature\": {\n      \"description\": \"An investigation, study,\
-  \ or analysis examines a biological feature.\",\n      \"domain\": \"investigation_entity\"\
-  ,\n      \"inverse\": \"feature_examined_by\",\n      \"label\": \"examines feature\"\
-  ,\n      \"range\": \"biological_feature\"\n    },\n    \"exposes\": {\n      \"\
-  description\": \"A material or source creates an exposure opportunity for a host.\"\
-  ,\n      \"domain\": \"contaminated_material\",\n      \"inverse\": \"exposed_to\"\
-  ,\n      \"label\": \"exposes\",\n      \"range\": \"host\"\n    },\n    \"has_symptom\"\
-  : {\n      \"description\": \"A host exhibits a symptom or clinical sign.\",\n \
-  \     \"domain\": \"host\",\n      \"inverse\": \"symptom_of\",\n      \"label\"\
-  : \"has symptom or sign\",\n      \"range\": \"symptom_or_sign\"\n    },\n    \"\
-  infects\": {\n      \"description\": \"A pathogen is detected in or associated with\
-  \ infection of a host.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"\
-  infected_by\",\n      \"label\": \"infects\",\n      \"range\": \"host\"\n    },\n\
-  \    \"maintained_in\": {\n      \"description\": \"A pathogen is maintained in\
-  \ a reservoir host population.\",\n      \"domain\": \"pathogen\",\n      \"inverse\"\
-  : \"maintains_pathogen\",\n      \"label\": \"maintained in\",\n      \"range\"\
-  : \"reservoir_host\"\n    },\n    \"occurred_during\": {\n      \"description\"\
-  : \"An outbreak, exposure, or case occurred during a temporal interval.\",\n   \
-  \   \"domain\": \"outbreak\",\n      \"inverse\": \"time_of_outbreak\",\n      \"\
-  label\": \"occurred during\",\n      \"range\": \"time_period\"\n    },\n    \"\
-  occurred_in\": {\n      \"description\": \"An outbreak or case cluster occurred\
-  \ in a location.\",\n      \"domain\": \"outbreak\",\n      \"inverse\": \"location_of_outbreak\"\
-  ,\n      \"label\": \"occurred in\",\n      \"range\": \"geographic_location\"\n\
-  \    },\n    \"presents_with\": {\n      \"description\": \"A case has a documented\
+  \    \"evidence_for\": {\n      \"description\": \"An observation, result, or analysis\
+  \ provides evidence for another entity, claim, or process.\",\n      \"domain\"\
+  : \"investigation_entity\",\n      \"inverse\": \"supported_by\",\n      \"label\"\
+  : \"evidence for\",\n      \"range\": \"investigation_entity\"\n    },\n    \"examines_feature\"\
+  : {\n      \"description\": \"An investigation, study, or analysis examines a biological\
+  \ feature.\",\n      \"domain\": \"investigation_entity\",\n      \"inverse\": \"\
+  feature_examined_by\",\n      \"label\": \"examines feature\",\n      \"range\"\
+  : \"biological_feature\"\n    },\n    \"exposes\": {\n      \"description\": \"\
+  A material or source creates an exposure opportunity for a host.\",\n      \"domain\"\
+  : \"contaminated_material\",\n      \"inverse\": \"exposed_to\",\n      \"label\"\
+  : \"exposes\",\n      \"range\": \"host\"\n    },\n    \"has_part\": {\n      \"\
+  description\": \"An entity or process contains another entity or process as a component.\"\
+  ,\n      \"domain\": \"investigation_entity\",\n      \"inverse\": \"part_of\",\n\
+  \      \"label\": \"has part\",\n      \"range\": \"investigation_entity\"\n   \
+  \ },\n    \"has_property\": {\n      \"description\": \"An entity has a biologically\
+  \ or scientifically relevant property or feature.\",\n      \"domain\": \"investigation_entity\"\
+  ,\n      \"inverse\": \"property_of\",\n      \"label\": \"has property\",\n   \
+  \   \"range\": \"biological_feature\"\n    },\n    \"has_symptom\": {\n      \"\
+  description\": \"A host exhibits a symptom or clinical sign.\",\n      \"domain\"\
+  : \"host\",\n      \"inverse\": \"symptom_of\",\n      \"label\": \"has symptom\
+  \ or sign\",\n      \"range\": \"symptom_or_sign\"\n    },\n    \"infects\": {\n\
+  \      \"description\": \"A pathogen is detected in or associated with infection\
+  \ of a host.\",\n      \"domain\": \"pathogen\",\n      \"inverse\": \"infected_by\"\
+  ,\n      \"label\": \"infects\",\n      \"range\": \"host\"\n    },\n    \"influences\"\
+  : {\n      \"description\": \"An entity or process changes, affects, or contributes\
+  \ to another entity or process.\",\n      \"domain\": \"investigation_entity\",\n\
+  \      \"inverse\": \"influenced_by\",\n      \"label\": \"influences\",\n     \
+  \ \"range\": \"investigation_entity\"\n    },\n    \"located_in\": {\n      \"description\"\
+  : \"An entity, event, or observation is located in a place or setting.\",\n    \
+  \  \"domain\": \"investigation_entity\",\n      \"inverse\": \"location_of\",\n\
+  \      \"label\": \"located in\",\n      \"range\": \"investigation_entity\"\n \
+  \   },\n    \"maintained_in\": {\n      \"description\": \"A pathogen is maintained\
+  \ in a reservoir host population.\",\n      \"domain\": \"pathogen\",\n      \"\
+  inverse\": \"maintains_pathogen\",\n      \"label\": \"maintained in\",\n      \"\
+  range\": \"reservoir_host\"\n    },\n    \"measured_by\": {\n      \"description\"\
+  : \"An entity, property, or result is measured or characterized by an investigation\
+  \ or assay.\",\n      \"domain\": \"investigation_entity\",\n      \"inverse\":\
+  \ \"measures\",\n      \"label\": \"measured by\",\n      \"range\": \"investigation_entity\"\
+  \n    },\n    \"occurred_during\": {\n      \"description\": \"An outbreak, exposure,\
+  \ or case occurred during a temporal interval.\",\n      \"domain\": \"outbreak\"\
+  ,\n      \"inverse\": \"time_of_outbreak\",\n      \"label\": \"occurred during\"\
+  ,\n      \"range\": \"time_period\"\n    },\n    \"occurred_in\": {\n      \"description\"\
+  : \"An outbreak or case cluster occurred in a location.\",\n      \"domain\": \"\
+  outbreak\",\n      \"inverse\": \"location_of_outbreak\",\n      \"label\": \"occurred\
+  \ in\",\n      \"range\": \"geographic_location\"\n    },\n    \"part_of\": {\n\
+  \      \"description\": \"An entity is a component or constituent of another entity\
+  \ or process.\",\n      \"domain\": \"investigation_entity\",\n      \"inverse\"\
+  : \"has_part\",\n      \"label\": \"part of\",\n      \"range\": \"investigation_entity\"\
+  \n    },\n    \"presents_with\": {\n      \"description\": \"A case has a documented\
   \ clinical syndrome.\",\n      \"domain\": \"case\",\n      \"inverse\": \"presentation_of\"\
   ,\n      \"label\": \"presents with\",\n      \"range\": \"clinical_syndrome\"\n\
   \    },\n    \"prevents\": {\n      \"description\": \"An intervention is intended\
@@ -439,7 +481,11 @@ system: "You are a scientific narrative component. Given a connected graph subst
   \ two investigation entities when no more specific relation is justified.\",\n \
   \     \"domain\": \"investigation_entity\",\n      \"inverse\": \"related_to\",\n\
   \      \"label\": \"related to\",\n      \"range\": \"investigation_entity\"\n \
-  \   },\n    \"sampled_from\": {\n      \"description\": \"A specimen is collected\
+  \   },\n    \"requires_understanding_of\": {\n      \"description\": \"An investigation,\
+  \ claim, or process requires understanding another entity or process.\",\n     \
+  \ \"domain\": \"investigation_entity\",\n      \"inverse\": \"is_required_for_understanding\"\
+  ,\n      \"label\": \"requires understanding of\",\n      \"range\": \"investigation_entity\"\
+  \n    },\n    \"sampled_from\": {\n      \"description\": \"A specimen is collected\
   \ from a host.\",\n      \"domain\": \"specimen\",\n      \"inverse\": \"source_of_specimen\"\
   ,\n      \"label\": \"sampled from\",\n      \"range\": \"host\"\n    },\n    \"\
   spills_over_from\": {\n      \"description\": \"A pathogen moves from an animal\
@@ -466,12 +512,3 @@ system: "You are a scientific narrative component. Given a connected graph subst
   : \"An assay produces an observed test result.\",\n      \"domain\": \"assay\",\n\
   \      \"inverse\": \"result_of\",\n      \"label\": \"yields result\",\n      \"\
   range\": \"test_result\"\n    }\n  }\n}"
-rendered: true
-render_context:
-  template_name: subgraph-narrator
-  template_version: 0.1.0
-  model: gpt-4o-mini
-  target_words: 100
-  ontology:
-    id: microbiology-zoonosis-assembled
-    version: 0.2.0

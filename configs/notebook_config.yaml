@@ -46,7 +46,7 @@ common:
   llm_save_every: 10
   resume: true
   retry_failed_llm_rows: false
-  debug_mode: false
+  debug_mode: true
   debug_abstracts_per_pathogen: 5
   debug_pathogens:
     Coxiella burnetii:

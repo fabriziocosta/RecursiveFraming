@@ -38,6 +38,20 @@ EXTRACTION_COLUMNS = [
     "extracted_at",
 ]
 
+BACTERIAL_SPECIES_USER_PREFIX = (
+    "BACTERIAL SPECIES EXTRACTION REQUEST\n"
+    "Review the supplied PubMed title or abstract for zoonotic bacterial evidence.\n\n"
+    "Extract only bacterial species explicitly associated with zoonosis, animal-to-human transmission, "
+    "spillover, or a zoonotic infection. Do not return viruses, parasites, fungi, hosts, diseases, "
+    "genera without a species, or names that appear only as background or comparison organisms. "
+    "Return an empty list when no bacterial species is explicitly associated.\n\n"
+    "Return JSON with exactly these keys: associated_with_zoonosis (boolean), bacterial_species "
+    "(array of scientific species names), evidence_phrases (array of short exact phrases), rationale "
+    "(short string), confidence (number from 0 to 1), review_required (boolean).\n\n"
+    "The request-specific stage, title, and optional abstract are provided in the final block below. "
+    "Use only that block as changing input."
+)
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -249,24 +263,16 @@ def extract_bacterial_species(
     """Ask an LLM for bacterial species explicitly associated with zoonosis."""
     if stage not in {"title", "abstract"}:
         raise ValueError("stage must be 'title' or 'abstract'.")
-    source = f"TITLE:\n{title.strip()}"
-    if stage == "abstract":
-        source += f"\n\nABSTRACT:\n{abstract.strip()}"
-    prompt = f"""Review this PubMed {stage} for zoonotic bacterial evidence.
-
-Extract only bacterial species explicitly associated with zoonosis, animal-to-human
-transmission, spillover, or a zoonotic infection in the supplied text. Do not return
-viruses, parasites, fungi, hosts, diseases, genera without a species, or names that
-appear only as background/comparison organisms. Return an empty list when no bacterial
-species is explicitly associated.
-
-Return JSON with exactly these keys:
-associated_with_zoonosis (boolean), bacterial_species (array of scientific species names),
-evidence_phrases (array of short exact phrases), rationale (short string),
-confidence (number from 0 to 1), review_required (boolean).
-
-{source}
-"""
+    prompt = json.dumps(
+        {
+            "_fixed_instructions": BACTERIAL_SPECIES_USER_PREFIX,
+            "stage": stage,
+            "title": title.strip(),
+            "abstract": abstract.strip() if stage == "abstract" else "",
+        },
+        ensure_ascii=False,
+        indent=2,
+    )
     last_error = ""
     for attempt in range(max(1, retries)):
         try:

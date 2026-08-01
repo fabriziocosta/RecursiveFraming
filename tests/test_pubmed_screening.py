@@ -18,6 +18,8 @@ from graphicalizer import (
     normalize_screening_output,
     normalize_refinement_output,
     refine_pubmed_corpus,
+    build_refinement_prompt,
+    build_screening_prompt,
     screen_pubmed_corpus,
     TerminalLLMError,
 )
@@ -141,6 +143,15 @@ class InterruptingRefiningLLM:
 
 
 class PubMedScreeningTests(unittest.TestCase):
+    def test_variable_request_fields_are_at_the_end_of_cacheable_prompts(self):
+        for builder in (build_screening_prompt, build_refinement_prompt):
+            first = json.loads(builder("Nipah virus", ["Nipah"], "Title A", "Abstract A"))
+            second = json.loads(builder("Nipah virus", ["Nipah"], "Title B", "Abstract B"))
+            self.assertEqual(list(first), ["_fixed_instructions", "target_pathogen", "target_aliases", "title", "abstract"])
+            self.assertEqual(first["_fixed_instructions"], second["_fixed_instructions"])
+            self.assertEqual(first["title"], "Title A")
+            self.assertEqual(second["title"], "Title B")
+
     def test_corpus_loader_filters_pathogen_and_year(self):
         frame = pd.DataFrame(
             [
