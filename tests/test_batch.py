@@ -23,7 +23,37 @@ class FakeGraphicalizer:
         return SimpleNamespace(graph=graph)
 
 
+class InterruptingGraphicalizer(FakeGraphicalizer):
+    def run(self, text):
+        self.calls += 1
+        if self.calls == 2:
+            raise KeyboardInterrupt
+        graph = nx.MultiDiGraph()
+        graph.add_node("e1", node_context=text.strip())
+        return SimpleNamespace(graph=graph)
+
+
 class BatchTests(unittest.TestCase):
+    def test_interruption_leaves_completed_items_for_the_next_run(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory) / "abstracts"
+            folder.mkdir()
+            (folder / "a.txt").write_text("first abstract", encoding="utf-8")
+            (folder / "b.txt").write_text("second abstract", encoding="utf-8")
+            store = NetworkXGraphStore(Path(directory) / "graphs")
+
+            with self.assertRaises(KeyboardInterrupt):
+                process_abstract_folder(
+                    folder, InterruptingGraphicalizer(), store, verbose=False
+                )
+
+            resumed_graphicalizer = FakeGraphicalizer()
+            result = process_abstract_folder(
+                folder, resumed_graphicalizer, store, verbose=False
+            )
+            self.assertEqual(result.processed, 2)
+            self.assertEqual(resumed_graphicalizer.calls, 1)
+
     def test_rerun_loads_manifest_and_only_processes_new_or_changed_files(self):
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory) / "abstracts"

@@ -132,7 +132,9 @@ def process_abstract_folder(
         if resume
         else {}
     )
-    records_by_key: dict[tuple[str, ...], dict[str, Any]] = {}
+    # Keep prior records in the manifest even when a later run uses a narrower
+    # source selection; re-expanding the selection can then still resume.
+    records_by_key: dict[tuple[str, ...], dict[str, Any]] = dict(prior_records)
     saved_paths: list[Path] = []
     failures: list[Mapping[str, str]] = []
 
@@ -142,12 +144,11 @@ def process_abstract_folder(
             for path in paths
             if (str(path),) in records_by_key
         ]
-        current_failures = [
-            record for record in current_records if record.get("status") == "failed"
-        ]
+        all_records = list(records_by_key.values())
+        current_failures = [record for record in all_records if record.get("status") == "failed"]
         current_saved_paths = [
             Path(str(record["graph_path"]))
-            for record in current_records
+            for record in all_records
             if record.get("status") == "saved" and record.get("graph_path")
         ]
         _write_manifest(
@@ -155,7 +156,7 @@ def process_abstract_folder(
             graph_store,
             folder,
             pattern,
-            current_records,
+            all_records,
             len(current_saved_paths),
             current_failures,
         )
@@ -304,7 +305,9 @@ def process_corpus_articles(
         if resume
         else {}
     )
-    records_by_key: dict[tuple[str, ...], dict[str, Any]] = {}
+    # Preserve prior rows outside a temporary filter so they remain resumable
+    # if a later run includes them again.
+    records_by_key: dict[tuple[str, ...], dict[str, Any]] = dict(prior_records)
     saved_paths: list[Path] = []
     failures: list[Mapping[str, str]] = []
 
@@ -314,19 +317,18 @@ def process_corpus_articles(
             for row in rows
             if (str(row.pathogen), str(row.pmid)) in records_by_key
         ]
-        current_failures = [
-            record for record in current_records if record.get("status") == "failed"
-        ]
+        all_records = list(records_by_key.values())
+        current_failures = [record for record in all_records if record.get("status") == "failed"]
         current_saved_paths = [
             Path(str(record["graph_path"]))
-            for record in current_records
+            for record in all_records
             if record.get("status") == "saved" and record.get("graph_path")
         ]
         _write_corpus_manifest(
             resolved_manifest_path,
             graph_store,
             resolved_corpus_path,
-            current_records,
+            all_records,
             len(current_saved_paths),
             current_failures,
         )
