@@ -848,6 +848,9 @@ class GraphicalizerPrompt:
     rendered: bool = False
     render_context: Mapping[str, Any] = field(default_factory=dict)
     node_context_system: str = ""
+    free_extraction_user_prefix: str = ""
+    ontology_casting_user_prefix: str = ""
+    node_context_user_prefix: str = ""
 
     def __post_init__(self) -> None:
         if not self.name.strip():
@@ -870,6 +873,9 @@ class GraphicalizerPrompt:
             free_extraction_system=FREE_EXTRACTION_SYSTEM_PROMPT,
             ontology_casting_system=ONTOLOGY_CASTING_SYSTEM_PROMPT,
             node_context_system=NODE_CONTEXT_SYSTEM_PROMPT,
+            free_extraction_user_prefix="",
+            ontology_casting_user_prefix="",
+            node_context_user_prefix="",
             rendered=False,
             render_context={},
         )
@@ -881,6 +887,9 @@ class GraphicalizerPrompt:
             "free_extraction_system": self.free_extraction_system,
             "ontology_casting_system": self.ontology_casting_system,
             "node_context_system": self.node_context_system,
+            "free_extraction_user_prefix": self.free_extraction_user_prefix,
+            "ontology_casting_user_prefix": self.ontology_casting_user_prefix,
+            "node_context_user_prefix": self.node_context_user_prefix,
             "rendered": self.rendered,
             "render_context": dict(self.render_context),
         }
@@ -932,8 +941,7 @@ class GraphicalizerPrompt:
             "model": model,
         }
 
-        free_prompt = (
-            f"{self.free_extraction_system}\n\n"
+        free_user_prefix = (
             "RUNTIME EXTRACTION DENSITY\n"
             "Use these effort settings to produce a sufficiently detailed graph; "
             "do not invent unsupported entities or relations to hit a quota. "
@@ -945,8 +953,7 @@ class GraphicalizerPrompt:
             "identifiers, but the following vocabulary will be used in pass 2:\n"
             f"{ontology_id_context}"
         )
-        casting_prompt = (
-            f"{self.ontology_casting_system}\n\n"
+        casting_user_prefix = (
             "RUNTIME EXTRACTION DENSITY REFERENCE\n"
             "The first pass was configured with these approximate targets. "
             "Do not add or remove graph objects during casting:\n"
@@ -958,8 +965,7 @@ class GraphicalizerPrompt:
             "non-null type must match one of those keys exactly:\n"
             f"{ontology_context}"
         )
-        node_context_prompt = (
-            f"{self.node_context_system}\n\n"
+        node_context_user_prefix = (
             "RUNTIME NODE-CONTEXT CONFIGURATION\n"
             f"{json.dumps(context_settings.to_mapping(), ensure_ascii=False, indent=2, sort_keys=True)}\n\n"
             "TARGET ONTOLOGY IDENTIFIERS\n"
@@ -972,11 +978,14 @@ class GraphicalizerPrompt:
         return GraphicalizerPrompt(
             name=self.name,
             version=self.version,
-            free_extraction_system=free_prompt,
-            ontology_casting_system=casting_prompt,
-            node_context_system=node_context_prompt,
+            free_extraction_system=self.free_extraction_system,
+            ontology_casting_system=self.ontology_casting_system,
+            node_context_system=self.node_context_system,
             rendered=True,
             render_context=render_context,
+            free_extraction_user_prefix=free_user_prefix,
+            ontology_casting_user_prefix=casting_user_prefix,
+            node_context_user_prefix=node_context_user_prefix,
         )
 
     def to_json(self, *, indent: int = 2) -> str:
@@ -1007,6 +1016,9 @@ class GraphicalizerPrompt:
             node_context_system=str(data.get("node_context_system", NODE_CONTEXT_SYSTEM_PROMPT)),
             rendered=bool(data.get("rendered", False)),
             render_context=dict(data.get("render_context", {})),
+            free_extraction_user_prefix=str(data.get("free_extraction_user_prefix", "")),
+            ontology_casting_user_prefix=str(data.get("ontology_casting_user_prefix", "")),
+            node_context_user_prefix=str(data.get("node_context_user_prefix", "")),
         )
 
     @classmethod
@@ -1297,6 +1309,19 @@ class OpenAIResponsesClient:
         self._node_context_schema = self._make_node_context_schema()
 
     @staticmethod
+    def _user_content(prefix: str, payload: Mapping[str, Any]) -> str:
+        """Place stable runtime context before the changing request payload."""
+        if not prefix.strip():
+            return json.dumps(payload, ensure_ascii=False)
+        # Keep the payload a JSON object for adapters and test clients while
+        # placing the stable runtime context before all request-specific
+        # values. Dict insertion order is preserved by json.dumps.
+        return json.dumps(
+            {"_runtime_instructions": prefix, **dict(payload)},
+            ensure_ascii=False,
+        )
+
+    @staticmethod
     def _make_free_schema() -> Any:
         try:
             from pydantic import BaseModel, ConfigDict, Field
@@ -1533,16 +1558,22 @@ class OpenAIResponsesClient:
     def _extract_free_graph_once(
         self,
         *,
-        system_prompt: str,
         request_payload: Mapping[str, Any],
     ) -> FreeGraphExtraction:
         response = self._parse_response(
             model=self.model,
             input=[
-                {"role": "system", "content": system_prompt},
+                # Keep the system message byte-for-byte stable between the
+                # normal and density-expansion passes. Request-specific data
+                # belongs in the user suffix so providers can reuse the
+                # cached prompt prefix.
+                {"role": "system", "content": self.prompt.free_extraction_system},
                 {
                     "role": "user",
-                    "content": json.dumps(request_payload, ensure_ascii=False),
+                    "content": self._user_content(
+                        self.prompt.free_extraction_user_prefix,
+                        request_payload,
+                    ),
                 },
             ],
             text_format=self._free_schema,
@@ -1574,7 +1605,6 @@ class OpenAIResponsesClient:
     def extract_free_graph(self, text: str) -> FreeGraphExtraction:
         extraction_request = self.extraction_density.request_payload(text)
         extraction = self._extract_free_graph_once(
-            system_prompt=self.prompt.free_extraction_system,
             request_payload=extraction_request,
         )
         minimum_entity_count = extraction_request["target_counts"]["minimum_entity_count"]
@@ -1590,25 +1620,19 @@ class OpenAIResponsesClient:
                 "current_validation_issues": validation_issues,
                 "required_minimum_entity_count": minimum_entity_count,
                 "expansion_attempt": attempt + 1,
+                "request_instructions": (
+                    "This is a density-expansion retry. Return a complete replacement "
+                    "extraction that preserves every existing id and supported fact, "
+                    "while adding distinct entities and relations grounded in the "
+                    "source text. Aim for at least the required minimum entity count. "
+                    "Every added entity must participate in a supported relation; do "
+                    "not invent facts, duplicate mentions, or add links solely to "
+                    "satisfy the count. Ensure every relation endpoint refers to an "
+                    "entity returned in the same extraction and correct all listed "
+                    "validation issues."
+                ),
             }
-            expansion_system = (
-                f"{self.prompt.free_extraction_system}\n\n"
-                "DENSITY EXPANSION\n"
-                "The previous extraction is below the requested minimum. Return a "
-                "complete replacement extraction that preserves every existing id "
-                "and supported fact, while adding distinct entities and relations "
-                "grounded in the source text. Aim for at least the required minimum "
-                "entity count. Every added entity must participate in a supported "
-                "relation; do not invent facts, duplicate mentions, or add links "
-                "solely to satisfy the count. Ensure every relation endpoint refers "
-                "to an entity returned in the same extraction. Correct any listed "
-                "validation issues.\n"
-                f"Current validation issues: {json.dumps(validation_issues, ensure_ascii=False)}\n"
-                f"Required minimum entity count: {minimum_entity_count}\n"
-                f"Expansion attempt: {attempt + 1}"
-            )
             candidate = self._extract_free_graph_once(
-                system_prompt=expansion_system,
                 request_payload=expansion_payload,
             )
             candidate_issues = validate_free_extraction(candidate)
@@ -1638,7 +1662,13 @@ class OpenAIResponsesClient:
             model=self.model,
             input=[
                 {"role": "system", "content": self.prompt.ontology_casting_system},
-                {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+                {
+                    "role": "user",
+                    "content": self._user_content(
+                        self.prompt.ontology_casting_user_prefix,
+                        payload,
+                    ),
+                },
             ],
             text_format=self._casting_schema,
         )
@@ -1664,29 +1694,29 @@ class OpenAIResponsesClient:
                 "required_relation_ids": [
                     relation.relation_id for relation in extraction.relations
                 ],
+                "request_instructions": (
+                    "This is a casting-repair retry. Return a complete replacement, "
+                    "preserving every id and endpoint and correcting all listed "
+                    "issues. Use only exact keys from ontology.entity_types and "
+                    "ontology.relation_types; use related_to when no specific "
+                    "relation is justified; never use inverse values or free-form "
+                    "labels. Do not return null ontology types. Return exactly one "
+                    "entity casting for every required_entity_id and exactly one "
+                    "relation casting for every required_relation_id."
+                ),
             }
-            repair_system = (
-                f"{self.prompt.ontology_casting_system}\n\n"
-                "CASTING REPAIR\n"
-                "The previous casting violated the ontology contract. Return a "
-                "complete replacement, preserving every id and endpoint. Correct "
-                "all listed issues. Use only exact keys from ontology.entity_types "
-                "and ontology.relation_types; use related_to when no specific "
-                "relation is justified; never use inverse values or free-form "
-                "labels. Do not return null ontology types because every graph "
-                "object must be ontology-labeled. Return exactly one entity casting "
-                "for every required_entity_id and exactly one relation casting for "
-                "every required_relation_id; do not omit an item even if its type "
-                "is uncertain.\n"
-                f"Validation issues: {json.dumps(issues, ensure_ascii=False)}"
-            )
             response = self._parse_response(
                 model=self.model,
                 input=[
-                    {"role": "system", "content": repair_system},
+                    # Repair metadata is part of the changing request suffix;
+                    # the ontology-casting system prefix stays cacheable.
+                    {"role": "system", "content": self.prompt.ontology_casting_system},
                     {
                         "role": "user",
-                        "content": json.dumps(repair_payload, ensure_ascii=False),
+                        "content": self._user_content(
+                            self.prompt.ontology_casting_user_prefix,
+                            repair_payload,
+                        ),
                     },
                 ],
                 text_format=self._casting_schema,
@@ -1795,7 +1825,13 @@ class OpenAIResponsesClient:
                 model=self.model,
                 input=[
                     {"role": "system", "content": self.prompt.node_context_system},
-                    {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+                    {
+                        "role": "user",
+                        "content": self._user_content(
+                            self.prompt.node_context_user_prefix,
+                            payload,
+                        ),
+                    },
                 ],
                 text_format=self._node_context_schema,
             )
@@ -2303,6 +2339,9 @@ class LLMGraphicalizer:
                         prompt.free_extraction_system
                         + prompt.ontology_casting_system
                         + prompt.node_context_system
+                        + prompt.free_extraction_user_prefix
+                        + prompt.ontology_casting_user_prefix
+                        + prompt.node_context_user_prefix
                     ).encode("utf-8")
                 ).hexdigest()
                 if prompt is not None

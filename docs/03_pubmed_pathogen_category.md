@@ -1,11 +1,11 @@
-# Notebook 02 — PubMed pathogen category assignment
+# Notebook 03 — PubMed pathogen category assignment
 
-Source notebook: notebooks/02_pubmed_pathogen_category.ipynb
+Source notebook: notebooks/03_pubmed_pathogen_category.ipynb
 
 ## Purpose
 
 This notebook is the second stage of PubMed processing. It reads only the
-accepted rows written by notebook 01, asks the LLM to classify abstract-level
+accepted rows written by notebook 02, asks the LLM to classify abstract-level
 animal-infection and zoonosis evidence, and derives the corpus-relative
 categories:
 
@@ -45,7 +45,7 @@ refinement.
 | RETRY_FAILED_LLM_ROWS | False | Retry previously failed category decisions when enabled. |
 
 OPENAI_API_KEY is required for the classification cell. The PubMed API key is
-not needed because PubMed retrieval has already completed in notebook 01.
+not needed because PubMed retrieval has already completed in notebook 02.
 
 ## Category semantics and derivation
 

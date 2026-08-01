@@ -20,6 +20,8 @@ from .batch import *
 from .batch import __all__ as _BATCH_ALL
 from .zoonosis_species import *
 from .zoonosis_species import __all__ as _ZOONOSIS_SPECIES_ALL
+from .notebook_config import *
+from .notebook_config import __all__ as _NOTEBOOK_CONFIG_ALL
 
 __all__ = [
     *_CORE_ALL,
@@ -32,4 +34,5 @@ __all__ = [
     *_GRAPH_STORE_ALL,
     *_BATCH_ALL,
     *_ZOONOSIS_SPECIES_ALL,
+    *_NOTEBOOK_CONFIG_ALL,
 ]

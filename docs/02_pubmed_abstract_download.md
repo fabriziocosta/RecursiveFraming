@@ -1,6 +1,6 @@
-# Notebook 01 — PubMed corpus collection and retrieval refinement
+# Notebook 02 — PubMed corpus collection and retrieval refinement
 
-Source notebook: [`notebooks/01_pubmed_abstract_download.ipynb`](../notebooks/01_pubmed_abstract_download.ipynb)
+Source notebook: [`notebooks/02_pubmed_abstract_download.ipynb`](../notebooks/02_pubmed_abstract_download.ipynb)
 
 ## Purpose
 
@@ -190,7 +190,7 @@ All files below are written under `OUTPUT_DIR` and ignored by Git:
 | `corpus_articles.parquet` | One deduplicated row per `(pathogen, PMID)`, including title, abstract, publication date, fetch status, search buckets, and queries. |
 | `llm_refinement.parquet` | One target-pathogen relevance decision per `(pathogen, PMID)` and refinement hash. |
 | `refinement_failures.parquet` | Failed, invalid, or terminal refinement rows for inspection/retry. |
-| `refined_corpus_articles.parquet` | Accepted corpus rows plus refinement evidence and provenance columns; input to notebook 02. |
+| `refined_corpus_articles.parquet` | Accepted corpus rows plus refinement evidence and provenance columns; input to notebook 03. |
 | `run_manifest.json` | Configuration hashes, query/result counts, model and prompt hashes, timestamps, paths, failures, and category summaries. |
 
 Parquet is used because it preserves typed tabular data and supports efficient

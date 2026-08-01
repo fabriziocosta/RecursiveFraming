@@ -1,6 +1,6 @@
-# Notebook 05 — Batch semantic abstraction
+# Notebook 06 — Batch semantic abstraction
 
-Source notebook: [`notebooks/05_batch_semantic_abstraction.ipynb`](../notebooks/05_batch_semantic_abstraction.ipynb)
+Source notebook: [`notebooks/06_batch_semantic_abstraction.ipynb`](../notebooks/06_batch_semantic_abstraction.ipynb)
 
 ## Purpose
 
@@ -10,7 +10,7 @@ The loop is implemented in `graphicalizer.batch.process_corpus_articles`; the
 notebook configures the provider, ontology, embeddings, and corpus filters,
 then prints a run summary.
 
-Use notebook 03 first when tuning prompts or inspecting a single graph. Use
+Use notebook 05 first when tuning prompts or inspecting a single graph. Use
 this notebook after those choices are acceptable for the full local corpus.
 
 ## Prerequisites
@@ -153,7 +153,7 @@ The notebook prints:
   through a temporary file and replaces the target only after serialization
   completes.
 
-## Relation to notebook 03
+## Relation to notebook 05
 
 Notebook 04 is the diagnostic path: it exposes validation reports, renders the
 full graph, samples a connected subgraph, and generates a narrative. Notebook

@@ -1,6 +1,6 @@
-# Notebook 00 — zoonotic bacterial species discovery
+# Notebook 01 — zoonotic bacterial species discovery
 
-Source notebook: [`notebooks/00_zoonotic_bacterial_species.ipynb`](../notebooks/00_zoonotic_bacterial_species.ipynb)
+Source notebook: [`notebooks/01_zoonotic_bacterial_species.ipynb`](../notebooks/01_zoonotic_bacterial_species.ipynb)
 
 This notebook searches PubMed for records containing zoonosis-related terms and
 asks an LLM to extract bacterial species explicitly associated with zoonosis.

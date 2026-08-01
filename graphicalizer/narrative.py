@@ -57,6 +57,7 @@ class SubgraphNarrativePrompt:
     system: str = SUBGRAPH_NARRATIVE_SYSTEM_PROMPT
     rendered: bool = False
     render_context: Mapping[str, Any] = field(default_factory=dict)
+    user_prefix: str = ""
 
     @classmethod
     def default(cls) -> "SubgraphNarrativePrompt":
@@ -80,17 +81,10 @@ class SubgraphNarrativePrompt:
             indent=2,
             sort_keys=True,
         )
-        effort_context = json.dumps(
-            config.to_mapping(),
-            ensure_ascii=False,
-            indent=2,
-            sort_keys=True,
-        )
-        rendered_system = (
-            f"{self.system}\n\n"
+        rendered_user_prefix = (
             "RUNTIME NARRATIVE EFFORT\n"
-            "Treat this as an approximate target, not a reason to add unsupported facts:\n"
-            f"{effort_context}\n\n"
+            "Treat the narrative_config in the request payload as an approximate "
+            "target, not a reason to add unsupported facts.\n\n"
             "ONTOLOGY\n"
             "Use the exact entity and relation identifiers supplied here when "
             "interpreting typed graph attributes:\n"
@@ -99,7 +93,7 @@ class SubgraphNarrativePrompt:
         return SubgraphNarrativePrompt(
             name=self.name,
             version=self.version,
-            system=rendered_system,
+            system=self.system,
             rendered=True,
             render_context={
                 "template_name": self.name,
@@ -111,6 +105,7 @@ class SubgraphNarrativePrompt:
                     "version": ontology.metadata.get("version"),
                 },
             },
+            user_prefix=rendered_user_prefix,
         )
 
     def to_mapping(self) -> Dict[str, Any]:
@@ -120,6 +115,7 @@ class SubgraphNarrativePrompt:
             "system": self.system,
             "rendered": self.rendered,
             "render_context": dict(self.render_context),
+            "user_prefix": self.user_prefix,
         }
 
     def to_yaml(self) -> str:
@@ -146,6 +142,7 @@ class SubgraphNarrativePrompt:
             system=str(data["system"]),
             rendered=bool(data.get("rendered", False)),
             render_context=dict(data.get("render_context", {})),
+            user_prefix=str(data.get("user_prefix", "")),
         )
 
     @classmethod
@@ -263,7 +260,10 @@ class OpenAISubgraphNarrator:
             model=self.model,
             input=[
                 {"role": "system", "content": prompt.system},
-                {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
+                {
+                    "role": "user",
+                    "content": self._user_content(prompt.user_prefix, payload),
+                },
             ],
             text_format=self._schema,
             **self.request_options,
@@ -282,6 +282,16 @@ class OpenAISubgraphNarrator:
             edge_ids=edge_ids,
             uncertainty=(parsed.uncertainty or "").strip(),
             notes=(parsed.notes or "").strip(),
+        )
+
+    @staticmethod
+    def _user_content(prefix: str, payload: Mapping[str, Any]) -> str:
+        """Keep stable ontology guidance before the changing graph payload."""
+        if not prefix.strip():
+            return json.dumps(payload, ensure_ascii=False)
+        return json.dumps(
+            {"_runtime_instructions": prefix, **payload},
+            ensure_ascii=False,
         )
 
 

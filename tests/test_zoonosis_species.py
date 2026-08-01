@@ -34,6 +34,11 @@ class FakeZoonosisPubMedClient:
         ]
 
 
+class BoundedFakeZoonosisPubMedClient(FakeZoonosisPubMedClient):
+    def search_all(self, query, *, max_results=None, page_size=1000, sort="relevance"):
+        return 2, ["1", "2"][:max_results]
+
+
 class FakeSpeciesLLM:
     def __init__(self, interrupt_on_call=None):
         self.calls = 0
@@ -105,6 +110,30 @@ class ZoonosisSpeciesTests(unittest.TestCase):
                 {"Bacillus anthracis", "Coxiella burnetii"},
             )
             self.assertTrue((output_dir / "summary.parquet").exists())
+
+    def test_changed_search_limit_does_not_reuse_old_article_checkpoint(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output_dir = Path(temporary_directory)
+            client = BoundedFakeZoonosisPubMedClient()
+
+            first = collect_zoonosis_articles(
+                client,
+                output_dir,
+                max_results=2,
+                fetch_batch_size=2,
+                verbose=False,
+            )
+            second = collect_zoonosis_articles(
+                client,
+                output_dir,
+                max_results=1,
+                fetch_batch_size=2,
+                verbose=False,
+            )
+
+            self.assertEqual(len(first), 2)
+            self.assertEqual(len(second), 1)
+            self.assertEqual(second["pmid"].astype(str).tolist(), ["1"])
 
 
 if __name__ == "__main__":

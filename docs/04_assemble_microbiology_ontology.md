@@ -1,6 +1,6 @@
-# Notebook 03 — Assemble a filtered microbiology ontology
+# Notebook 04 — Assemble a filtered microbiology ontology
 
-Source notebook: [`notebooks/03_assemble_microbiology_ontology.ipynb`](../notebooks/03_assemble_microbiology_ontology.ipynb)
+Source notebook: [`notebooks/04_assemble_microbiology_ontology.ipynb`](../notebooks/04_assemble_microbiology_ontology.ipynb)
 
 ## Purpose
 
@@ -11,8 +11,8 @@ ontology resources. External resources are downloaded, filtered by domain
 patterns, ranked by hierarchy and resource priority, and bounded by a global
 term budget.
 
-Run this notebook before notebook 03 when the assembled ontology is desired.
-Notebook 04 automatically falls back to the checked-in base ontology if the
+Run this notebook before notebook 05 when the assembled ontology is desired.
+Notebook 05 automatically falls back to the checked-in base ontology if the
 assembled file does not exist.
 
 ## Inputs and external resources

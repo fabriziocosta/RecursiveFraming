@@ -98,6 +98,15 @@ def collect_zoonosis_articles(
     query_hash = _stable_hash({"query": query, "max_results": max_results})
     search_path = output / "zoonosis_pubmed_search.json"
     articles_path = output / "zoonosis_pubmed_articles.parquet"
+    article_columns = [
+        "pmid",
+        "title",
+        "abstract",
+        "publication_date",
+        "fetch_status",
+        "fetch_error",
+        "fetched_at",
+    ]
 
     search = _read_json(search_path) if resume else {}
     search_matches = search.get("query_hash") == query_hash
@@ -117,6 +126,9 @@ def collect_zoonosis_articles(
             "updated_at": _now(),
         }
         _write_json(search_path, search)
+        # A changed query or max_results defines a new corpus. Do not merge
+        # records from the previous search into the new article checkpoint.
+        _atomic_write_parquet(pd.DataFrame(columns=article_columns), articles_path)
     pmids = [str(pmid) for pmid in search.get("pmids", [])]
     articles = (
         pd.read_parquet(articles_path)
@@ -306,6 +318,10 @@ def run_species_extraction_stage(
     output = Path(output_path)
     prompt_hash = _stable_hash({"stage": stage, "model": model, "max_tokens": max_tokens})
     existing = pd.read_parquet(output) if resume and output.exists() else pd.DataFrame(columns=EXTRACTION_COLUMNS)
+    article_pmids = set(articles["pmid"].astype(str))
+    if not existing.empty:
+        existing = existing[existing["pmid"].astype(str).isin(article_pmids)].copy()
+        _atomic_write_parquet(existing, output)
     if existing.empty:
         current = existing
     else:

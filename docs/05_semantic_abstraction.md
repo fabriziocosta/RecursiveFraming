@@ -1,6 +1,6 @@
-# Notebook 04 — Single-abstract semantic abstraction
+# Notebook 05 — Single-abstract semantic abstraction
 
-Source notebook: [`notebooks/04_semantic_abstraction.ipynb`](../notebooks/04_semantic_abstraction.ipynb)
+Source notebook: [`notebooks/05_semantic_abstraction.ipynb`](../notebooks/05_semantic_abstraction.ipynb)
 
 ## Purpose
 
@@ -11,7 +11,7 @@ the graph, renders it, samples a connected subgraph, and asks the LLM to write
 a short scientific narrative for that subgraph.
 
 Use this notebook to inspect prompt behavior and graph quality before running
-the batch workflow in notebook 04. It is not a corpus-wide resumable runner.
+the batch workflow in notebook 06. It is not a corpus-wide resumable runner.
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ make the selected model available. Graph rendering requires either the native
 Graphviz `dot` executable or the project's supported Python fallback binding.
 
 The notebook expects `outputs/pubmed_screening/corpus_articles.parquet`, which
-is produced by notebook 01 and ignored by Git. The Parquet file contains one
+is produced by notebook 02 and ignored by Git. The Parquet file contains one
 deduplicated row per `(pathogen, PMID)` and is now the canonical abstract store
 for downstream graphicalization.
 
@@ -164,10 +164,10 @@ subgraph is ambiguous.
 
 ## Common failures
 
-- **No corpus rows found:** run notebook 01 to create
+- **No corpus rows found:** run notebook 02 to create
   `outputs/pubmed_screening/corpus_articles.parquet`, then check the corpus
   filters and current working directory.
-- **Missing assembled ontology:** run notebook 02, or allow the documented base
+- **Missing assembled ontology:** run notebook 04, or allow the documented base
   ontology fallback.
 - **Provider authentication failure:** set `OPENAI_API_KEY` or switch to a
   running local Ollama provider.

@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -103,9 +104,14 @@ class SubgraphTests(unittest.TestCase):
             self.assertEqual(result.actual_words, 9)
             self.assertTrue(snapshot.exists())
             self.assertEqual(client.responses.calls[0]["model"], "test-model")
-            self.assertIn("42", client.responses.calls[0]["input"][0]["content"])
+            self.assertNotIn("42", client.responses.calls[0]["input"][0]["content"])
+            self.assertEqual(
+                json.loads(client.responses.calls[0]["input"][1]["content"])[
+                    "narrative_config"
+                ]["target_words"],
+                42,
+            )
 
 
 if __name__ == "__main__":
     unittest.main()
-

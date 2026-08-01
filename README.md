@@ -97,20 +97,23 @@ system path.
 
 ## PubMed abstracts
 
-The [zoonotic bacterial species notebook](notebooks/00_zoonotic_bacterial_species.ipynb)
+Start with the [shared configuration notebook](notebooks/00_configuration.ipynb)
+and edit [`configs/notebook_config.yaml`](configs/notebook_config.yaml). The
+[zoonotic bacterial species notebook](notebooks/01_zoonotic_bacterial_species.ipynb)
 searches zoonosis-related PubMed records and runs title- and abstract-level LLM
 extraction. It writes resumable checkpoints under
 `outputs/pubmed_screening/zoonosis_species/` and the one-row-per-species result
 to `assets/zoonotic_bacterial_species.parquet`.
 
-The [PubMed collection notebook](notebooks/01_pubmed_abstract_download.ipynb)
+The [PubMed collection notebook](notebooks/02_pubmed_abstract_download.ipynb)
 uses NCBI E-utilities to build a resumable pathogen/zoonosis corpus, then
 refines target-pathogen attribution with an LLM. The
-[category notebook](notebooks/02_pubmed_pathogen_category.ipynb) classifies
+[category notebook](notebooks/03_pubmed_pathogen_category.ipynb) classifies
 the accepted corpus and writes pathogen-level category tables. Configure the
-pathogen aliases in the notebook and edit the reusable search bundles under
-`assets/search_bundles/`; the notebook defaults to `xfcosta@gmail.com` for
-`PUBMED_EMAIL` (override it if needed) and requires
+pathogen aliases and run limits in `configs/notebook_config.yaml`, and edit the
+reusable search bundles under `assets/search_bundles/`; the configuration
+defaults to `xfcosta@gmail.com` for `PUBMED_EMAIL` (override it if needed) and
+requires
 `OPENAI_API_KEY` before running it. Parquet checkpoints and the run manifest
 are written under `outputs/pubmed_screening/`, which is intentionally ignored
 by Git.
