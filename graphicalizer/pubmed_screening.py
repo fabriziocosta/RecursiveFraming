@@ -977,7 +977,10 @@ def screen_pubmed_corpus(
     done_keys = set()
     if not current_existing.empty and "classification_status" in current_existing:
         for row in current_existing.itertuples(index=False):
-            if row.classification_status == "classified" or (not retry_failed and row.classification_status == "failed"):
+            if row.classification_status == "classified" or (
+                not retry_failed
+                and row.classification_status in {"failed", "invalid_response", "terminal_failure"}
+            ):
                 done_keys.add((str(row.pathogen), str(row.pmid)))
     pending = corpus_df[(corpus_df["fetch_status"] == "ok") & corpus_df["abstract"].fillna("").astype(str).str.strip().ne("")].copy()
     pending = pending[~pending.apply(lambda row: (str(row.pathogen), str(row.pmid)) in done_keys, axis=1)]
@@ -1137,7 +1140,8 @@ def refine_pubmed_corpus(
     if not current_existing.empty and "classification_status" in current_existing:
         for row in current_existing.itertuples(index=False):
             if row.classification_status == "classified" or (
-                not retry_failed and row.classification_status in {"failed", "invalid_response"}
+                not retry_failed
+                and row.classification_status in {"failed", "invalid_response", "terminal_failure"}
             ):
                 done_keys.add((str(row.pathogen), str(row.pmid)))
     pending = corpus_df[

@@ -96,7 +96,11 @@ class RetryingLLM:
 
 
 class TerminalLLM:
+    def __init__(self):
+        self.calls = 0
+
     def complete(self, prompt, **kwargs):
+        self.calls += 1
         raise RuntimeError("insufficient_quota")
 
 
@@ -349,6 +353,33 @@ class PubMedScreeningTests(unittest.TestCase):
             self.assertEqual(pathogen_table.loc[0, "pathogen"], "Nipah virus")
             self.assertEqual(int(pathogen_table.loc[0, "category_2_count"]), 2)
             self.assertEqual(int(pathogen_table.loc[0, "category_3_count"]), 1)
+
+    def test_screening_does_not_repeat_persisted_terminal_failures(self):
+        corpus = pd.DataFrame(
+            [
+                {
+                    "config_hash": "cfg",
+                    "pathogen": "Nipah virus",
+                    "pmid": "1",
+                    "title": "Study",
+                    "abstract": "Animal infection.",
+                    "fetch_status": "ok",
+                    "publication_date": "2020",
+                }
+            ]
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            llm = TerminalLLM()
+            first = screen_pubmed_corpus(
+                corpus, {"Nipah virus": ["NiV"]}, llm, directory, model="fake", verbose=False
+            )
+            second = screen_pubmed_corpus(
+                corpus, {"Nipah virus": ["NiV"]}, llm, directory, model="fake", verbose=False
+            )
+            self.assertEqual(llm.calls, 1)
+            self.assertEqual(len(first.screening), 1)
+            self.assertEqual(len(second.screening), 1)
+            self.assertEqual(second.screening.iloc[0]["classification_status"], "terminal_failure")
 
     def test_invalid_or_ambiguous_output_is_reviewable(self):
         result = normalize_screening_output(
