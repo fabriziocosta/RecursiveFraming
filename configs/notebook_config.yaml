@@ -1,10 +1,3 @@
-# Shared configuration for the numbered research notebooks.
-#
-# Notebook 00 validates and displays this file. The remaining notebooks read
-# only the section associated with their notebook number plus the shared
-# settings below. Keep credentials out of this file; the *_env entries name
-# environment variables that are read at runtime.
-
 common:
   output_root: outputs
   pubmed_email: xfcosta@gmail.com
@@ -19,12 +12,10 @@ common:
   llm_save_every: 10
   resume: true
   retry_failed_llm_rows: false
-
 notebook_01_zoonotic_bacterial_species:
-  query: >-
-    ("zoonosis"[Title/Abstract] OR "zoonotic"[Title/Abstract]
-    OR "zoonoses"[Title/Abstract] OR spillover[Title/Abstract]
-    OR "animal-to-human"[Title/Abstract] OR "animal to human"[Title/Abstract])
+  query: ("zoonosis"[Title/Abstract] OR "zoonotic"[Title/Abstract] OR "zoonoses"[Title/Abstract]
+    OR spillover[Title/Abstract] OR "animal-to-human"[Title/Abstract] OR "animal to
+    human"[Title/Abstract])
   pubmed_max_results: 5
   pubmed_search_page_size: 1000
   pubmed_fetch_batch_size: 200
@@ -36,24 +27,22 @@ notebook_01_zoonotic_bacterial_species:
   openai_max_tokens: 512
   run_abstract_stage: true
   abstract_input_mode: title_positive
-
 notebook_02_pubmed_abstract_download:
   pathogens:
     Coxiella burnetii:
-      - Coxiella
-      - C. burnetii
+    - Coxiella
+    - C. burnetii
   search_bundle_dir: assets/search_bundles
   search_bundles:
-    - filename: pubmed_animal_evidence.yaml
-      search_type: animal
-    - filename: pubmed_zoonosis_evidence.yaml
-      search_type: zoonosis
+  - filename: pubmed_animal_evidence.yaml
+    search_type: animal
+  - filename: pubmed_zoonosis_evidence.yaml
+    search_type: zoonosis
   pubmed_max_results_per_query: 5000
   pubmed_search_page_size: 1000
   pubmed_fetch_batch_size: 200
   output_subdir: pubmed_screening
   openai_max_tokens: 1024
-
 notebook_03_pubmed_pathogen_category:
   refined_corpus_filename: refined_corpus_articles.parquet
   output_subdir: pubmed_screening
@@ -62,15 +51,13 @@ notebook_03_pubmed_pathogen_category:
   corpus_end_year: null
   pathogens:
     Coxiella burnetii:
-      - Coxiella
-      - C. burnetii
+    - Coxiella
+    - C. burnetii
   openai_max_tokens: 1024
-
 notebook_04_assemble_microbiology_ontology:
   term_budget: 500
   abstraction_level: 2
   include_ncbitaxon: false
-
 notebook_05_semantic_abstraction:
   corpus_subdir: pubmed_screening
   corpus_filename: corpus_articles.parquet
@@ -110,7 +97,6 @@ notebook_05_semantic_abstraction:
   subgraph_output_relative_path: outputs/selected_random_subgraph.svg
   narrative_prompt_relative_path: assets/prompts/subgraph_narrative_prompt_template.yaml
   narrative_snapshot_relative_path: outputs/prompts/subgraph-narrator-0.1.0.yaml
-
 notebook_06_batch_semantic_abstraction:
   corpus_subdir: pubmed_screening
   corpus_filename: corpus_articles.parquet
